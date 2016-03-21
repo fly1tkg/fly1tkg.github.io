@@ -1,0 +1,2160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[fly1tkg blog]]></title>
+  <link href="http://fly1tkg.github.io/atom.xml" rel="self"/>
+  <link href="http://fly1tkg.github.io/"/>
+  <updated>2016-03-21T08:26:49+00:00</updated>
+  <id>http://fly1tkg.github.io/</id>
+  <author>
+    <name><![CDATA[Shoichi Takagi]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[RxJavaのテストコードを書く]]></title>
+    <link href="http://fly1tkg.github.io/2016/03/rxjava-test/"/>
+    <updated>2016-03-21T05:45:04+00:00</updated>
+    <id>http://fly1tkg.github.io/2016/03/rxjava-test</id>
+    <content type="html"><![CDATA[<h2>はじめに</h2>
+
+<p>最近のAndroidアプリ開発では<strong>Clean Architecture</strong>など、設計の議論がすすみ、テストコードのためのツール群も増えたことで、テストコードを書くコストが減ってきているように感じます。</p>
+
+<p>また、もう一つの流行としてRxJavaの採用事例が増えてきたように感じます。</p>
+
+<p>JavaのJUnitテストやAndroidのテストにおいて、RxJavaのテストコードをどのように書くべきか、調べたことを書いていきたいと思います。</p>
+
+<!-- More -->
+
+
+<h2>TestSubscriberについて</h2>
+
+<p>Subscriptionは非同期処理なので、ユニットテストするには同期処理が必要になります。（非同期処理のままにしておくと、Observableから値が返ってくる前にテストが終了してしまいます。）</p>
+
+<p>公式のテスト方法は<strong>TestSubscriber</strong>クラスを利用することです。これはRxJavaライブラリに含まれています。</p>
+
+<h2>正常系のテスト</h2>
+
+<p>以下がコードのサンプルです。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Observable</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">observable</span> <span class="o">=</span> <span class="n">Observable</span><span class="o">.</span><span class="na">just</span><span class="o">(</span><span class="s">&quot;foo&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Testsubscriberを作成する</span>
+</span><span class='line'><span class="n">TestSubscriber</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">testSubscriber</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TestSubscriber</span><span class="o">&lt;&gt;();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// テストしたObservableに先程のSubscriberをsubscribeさせます</span>
+</span><span class='line'><span class="n">observable</span><span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="n">testSubscriber</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 処理が完了するのを待ちます</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">awaitTerminalEvent</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 検証します</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">assertNoErrors</span><span class="o">();</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">assertValue</span><span class="o">(</span><span class="s">&quot;foo&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>TestSubscriber#awaitTerminalEvent</strong>はObservableSubscriberの<strong>onCompleted</strong>または<strong>onError</strong>を呼ぶまでブロックしてくれます。longとTimeUnitを引数に指定することで、タイムアウトも指定することができます</p>
+
+<h2>異常系のテスト</h2>
+
+<p>例外の発生をテストする場合は以下のようにかけます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Observable</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">observable</span> <span class="o">=</span> <span class="n">Observable</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="k">new</span> <span class="n">IllegalStateException</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">TestSubscriber</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">testSubscriber</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TestSubscriber</span><span class="o">&lt;&gt;();</span>
+</span><span class='line'><span class="n">observable</span><span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="n">testSubscriber</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">awaitTerminalEvent</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">assertError</span><span class="o">(</span><span class="n">IllegalStateException</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>TestSubscriber#assertError</strong>では引数に例外クラスまたはインスタンスを指定することで発生を検証できます。</p>
+
+<h2>ストリームとSubscriberの状態のテスト</h2>
+
+<p><strong>Testsubscriber#assertValue</strong>はストリームの一番最後の値しか検証できません。1つの値しか返さない場合はこれでも良いのですが、複数の値が流れてくる場合は工夫する必要があります。</p>
+
+<p>以下のコードでは説明を簡単にするためにTestSubscriberを直接操作しています。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">TestSubscriber</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="n">testSubscriber</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TestSubscriber</span><span class="o">&lt;&gt;();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// onNextに値が渡っていないことを検証できます</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">assertNoValues</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">onNext</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'><span class="c1">// onNextに渡ってきた値を検証する</span>
+</span><span class='line'><span class="k">assert</span><span class="o">(</span><span class="mi">1</span> <span class="o">==</span> <span class="n">testSubscriber</span><span class="o">.</span><span class="na">getOnNextEvents</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">onNext</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">onNext</span><span class="o">(</span><span class="mi">3</span><span class="o">);</span>
+</span><span class='line'><span class="c1">// getOnNextEventsはonNextで受け取った値を全て保持しています</span>
+</span><span class='line'><span class="k">assert</span><span class="o">(</span><span class="mi">1</span> <span class="o">==</span> <span class="n">testSubscriber</span><span class="o">.</span><span class="na">getOnNextEvents</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">));</span>
+</span><span class='line'><span class="k">assert</span><span class="o">(</span><span class="mi">2</span> <span class="o">==</span> <span class="n">testSubscriber</span><span class="o">.</span><span class="na">getOnNextEvents</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+</span><span class='line'><span class="k">assert</span><span class="o">(</span><span class="mi">3</span> <span class="o">==</span> <span class="n">testSubscriber</span><span class="o">.</span><span class="na">getOnNextEvents</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">2</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// onNextで受け取った値の配列を検証できます</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">assertReceivedOnNext</span><span class="o">(</span><span class="n">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 受け取った値の数を検証できます</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">assertValueCount</span><span class="o">(</span><span class="mi">3</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// subscriberの状態も検証できる</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">assertNotCompleted</span><span class="o">();</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">assertNoTerminalEvent</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">onCompleted</span><span class="o">();</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">assertTerminalEvent</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">unsubscribe</span><span class="o">();</span>
+</span><span class='line'><span class="n">testSubscriber</span><span class="o">.</span><span class="na">assertUnsubscribed</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>TestSubscriber#getOnNextEvents</strong>はonNextで受け取った値を全て保持しています。これを利用すると特定の場所に特定の値が流れてくることを検証できます。</p>
+
+<p>また<strong>Testsubscriber#assertReceivedOnNext</strong>でonNextで受け取った値をリストで比較して検証できます。</p>
+
+<p><strong>Testsubscriber#assertValueCount</strong>はonNextで受け取った値の数を検証できます。</p>
+
+<p><strong>TestSubscriber#assertNotCompleted</strong>はonCompletedが呼ばれていないこと、</p>
+
+<p><strong>Testsubscriber#assertNoTerminalEvent</strong>はそれに加えてonErrorも呼ばれていないことを検証できます。</p>
+
+<p><strong>Testsubscriber#assertUnsubscribed</strong>はunsubscribeされていることを検証できます。</p>
+
+<h2>おわりに</h2>
+
+<p><strong>RxJava</strong>にはテスト用の<strong>TestSubscriber</strong>クラスが準備されています。</p>
+
+<p>RxJavaでは<strong>Observable#flatMap</strong>によって個々のObservableを簡単に連結できるので、小さい単位でObservableを作成するコードを作成し、それぞれの入出力のテストコードを書いておくことで、堅牢で柔軟なモジュールが作成できるのではと思いました。</p>
+
+<h2>Gist</h2>
+
+<p><a href="https://gist.github.com/fly1tkg/3c29dc34682b64076058">https://gist.github.com/fly1tkg/3c29dc34682b64076058</a></p>
+
+<h2>参考</h2>
+
+<p><a href="http://reactivex.io/RxJava/javadoc/rx/observers/TestSubscriber.html">http://reactivex.io/RxJava/javadoc/rx/observers/TestSubscriber.html</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[ZendeskでGoogle Apps管理ドメインのメールアドレスを送受信する]]></title>
+    <link href="http://fly1tkg.github.io/2016/02/integrate-google-apps-zendesk/"/>
+    <updated>2016-02-12T12:25:24+00:00</updated>
+    <id>http://fly1tkg.github.io/2016/02/integrate-google-apps-zendesk</id>
+    <content type="html"><![CDATA[<p>この記事はGoogle Appsで管理しているメールアドレスをZendeskで使えるようにする設定のメモ書きです。</p>
+
+<h2>Zendeskでメールを受け取る</h2>
+
+<h3>管理コンソールから アプリ > Google Apps > Gmailを選択します</h3>
+
+<p><img src="http://fly1tkg.github.io/images/2016/02/integrate-google-apps-zendesk/0.png"></p>
+
+<!--more-->
+
+
+<p><img src="http://fly1tkg.github.io/images/2016/02/integrate-google-apps-zendesk/1.png">
+<img src="http://fly1tkg.github.io/images/2016/02/integrate-google-apps-zendesk/2.png"></p>
+
+<h3>デフォルトの転送を開き、設定を追加をクリックする</h3>
+
+<p><img src="http://fly1tkg.github.io/images/2016/02/integrate-google-apps-zendesk/3.png"></p>
+
+<h3>宛先にZendeskで使用したいメールアドレスを入力する</h3>
+
+<p><img src="http://fly1tkg.github.io/images/2016/02/integrate-google-apps-zendesk/4.png"></p>
+
+<h3>受信者を追加し、受信者のメールアドレスにZendeskのメールアドレスを追加する</h3>
+
+<p><img src="http://fly1tkg.github.io/images/2016/02/integrate-google-apps-zendesk/5.png"></p>
+
+<h3>この操作は認識されないアドレスと認識されたアドレスに対して実行しますを選択して保存する</h3>
+
+<p><img src="http://fly1tkg.github.io/images/2016/02/integrate-google-apps-zendesk/5.png"></p>
+
+<h3>Zendeskにメールアドレスを追加する</h3>
+
+<p>右下の歯車マークをクリックして設定を開き、チャネルのメールをクリックするとメールの設定画面が開きます。</p>
+
+<p>サポートアドレスのアドレスを追加で使用したいメールアドレスを追加します</p>
+
+<p><img src="http://fly1tkg.github.io/images/2016/02/integrate-google-apps-zendesk/7.png"></p>
+
+<p>以上でZendeskの受信設定は終わりです。</p>
+
+<h2>Zendeskからメールを送信する</h2>
+
+<p>このままでもZendeskのメールは送信できますが、SPFレコードをドメインに追加することで迷惑メールフォルダに入りにくくなります。</p>
+
+<p>ドメインに以下のレコードを追加します。</p>
+
+<pre><code>v=spf1 include:mail.zendesk.com ?all
+</code></pre>
+
+<p>参考: <a href="https://support.zendesk.com/hc/ja/articles/203683886">https://support.zendesk.com/hc/ja/articles/203683886</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[ShellCheckでshellscriptの静的チェックをする]]></title>
+    <link href="http://fly1tkg.github.io/2016/02/shellcheck/"/>
+    <updated>2016-02-06T07:06:05+00:00</updated>
+    <id>http://fly1tkg.github.io/2016/02/shellcheck</id>
+    <content type="html"><![CDATA[<p>最近Rubocopでrubyコードの静的チェックをCIでしているのですが、シェルスクリプトについても同様にできないかと探してみると、ShellCheckというものを見つけました。</p>
+
+<h2>ShellCheckとは</h2>
+
+<p>シェルスクリプトを静的チェックして、より良い書き方を提案してくれます。</p>
+
+<p><a href="https://github.com/koalaman/shellcheck">https://github.com/koalaman/shellcheck</a></p>
+
+<blockquote><p><img src="https://raw.githubusercontent.com/koalaman/shellcheck/master/doc/terminal.png"></p>
+
+<p>reference: <a href="https://github.com/koalaman/shellcheck">https://github.com/koalaman/shellcheck</a></p></blockquote>
+
+<!--more-->
+
+
+<p>Webからも簡単に試せます。 <a href="http://www.shellcheck.net/">http://www.shellcheck.net/</a></p>
+
+<p>コマンドラインのインストールは各種パッケージマネージャーが対応しているので簡単にできます。</p>
+
+<p><a href="https://github.com/koalaman/shellcheck#installing">https://github.com/koalaman/shellcheck#installing</a></p>
+
+<h2>ShellCheckをWerckerで使う</h2>
+
+<p>gitにpushしたコードをCIサービスでチェックしたいので、Werckerで試してみます。</p>
+
+<p>既にShellCheckを実行するStepが公開されているので、<strong>wercker.yml</strong>に組み込むだけです。</p>
+
+<p><a href="https://github.com/wercker/step-shellcheck">https://github.com/wercker/step-shellcheck</a></p>
+
+<p><strong>files</strong>の部分にチェックしたいコードを指定します。
+指定しない場合は<strong>*.sh</strong>が入ります</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">build</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">steps</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">shellcheck</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">files</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">run.sh</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>おわりに</h2>
+
+<p>僕はあまりシェルスクリプトを本格的に書いたことがありませんが、こういった静的チェックが先生になって添削してくれることでよりシェルスクリプトを理解できるようになりました。</p>
+
+<p>シェルスクリプト以外にもCIで静的チェックをするのはとても良いと思いました。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[KLIA2にはカプセルホテルがある]]></title>
+    <link href="http://fly1tkg.github.io/2015/05/klia2-hotel/"/>
+    <updated>2015-05-09T11:35:58+00:00</updated>
+    <id>http://fly1tkg.github.io/2015/05/klia2-hotel</id>
+    <content type="html"><![CDATA[<p><img src="http://fly1tkg.github.io/images/2015/05/klia2-hotel/1.jpg"></p>
+
+<p>シャワーのみはMR20（ミネラルウォーターつき）なので、空港泊の人は利用してもいいかも</p>
+
+<p>場所はKLIA2の1階の端っこにある</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[クアラルンプール国際空港からマラッカへバスで行く方法]]></title>
+    <link href="http://fly1tkg.github.io/2015/05/klia-to-malacca-bus/"/>
+    <updated>2015-05-09T10:47:19+00:00</updated>
+    <id>http://fly1tkg.github.io/2015/05/klia-to-malacca-bus</id>
+    <content type="html"><![CDATA[<h2>空港からマラッカセントラル駅(Melaca Sentral)へ移動する</h2>
+
+<p>価格: MR25程度
+時間: 2時間程度</p>
+
+<!--more-->
+
+
+<p>空港の一番下の階にバスのチケット売り場があります。
+複数の会社が運行しているので一番早く出発する会社を選びましょう。</p>
+
+<p>画像はKLIA2のチケットカウンターです。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/klia-to-malacca-bus/1.jpg"></p>
+
+<p>マラッカセントラルに到着したら、チケットカウンターで帰りのチケットや出発時間を調べておくとよいでしょう。</p>
+
+<p>また、ここからシンガポールへもバスで行くことができます。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/klia-to-malacca-bus/3.jpg"></p>
+
+<h2>マラッカセントラルから市内へ移動する</h2>
+
+<p>価格: MR1程度
+時間: 10分程度</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/klia-to-malacca-bus/2.jpg"></p>
+
+<p>マラッカセントラルに到着したら反対側の近距離ターミナルへ移動して、17番のバスに乗ると市内へ行くことができます。</p>
+
+<p>行き先はよくわからなければチャーチとかチャイナタウンとか言えばOKです。</p>
+
+<p>タクシーもあります。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/klia-to-malacca-bus/4.jpg"></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[桃園国際空港から台北駅(台北車站)へバスで行く方法]]></title>
+    <link href="http://fly1tkg.github.io/2015/05/taoyuan-to-taipei/"/>
+    <updated>2015-05-09T10:16:06+00:00</updated>
+    <id>http://fly1tkg.github.io/2015/05/taoyuan-to-taipei</id>
+    <content type="html"><![CDATA[<p>桃園国際空港から台北市内までの移動はバスを利用すると安くてお得です。</p>
+
+<p>この記事では桃園国際空港から出発するバスについて説明します。</p>
+
+<ul>
+<li>バス名: 國光客運1819系統</li>
+<li>料金: NT$125</li>
+<li>出発時刻: 04:00~24:20 10~15分間隔</li>
+<li>到着時間: 1時間ほど</li>
+<li>公式サイト: <a href="http://www.kingbus.com.tw/ticketPriceResult.php?sid=99">http://www.kingbus.com.tw/ticketPriceResult.php?sid=99</a></li>
+</ul>
+
+
+<p>台北駅(台北車站)から桃園国際空港へバスで行く方法はこちら</p>
+
+<p><a href="http://fly1tkg.github.io/2015/05/taipei-to-taoyuan/">http://fly1tkg.github.io/2015/05/taipei-to-taoyuan/</a></p>
+
+<!--more-->
+
+
+<p>到着ロビーから一番下の階まで行きます</p>
+
+<p>画像は第一ターミナルです</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/taoyuan-to-taipei/1.jpg"></p>
+
+<p>国光客運のカウンターで台北駅までのチケットを購入するか、自動販売機で買うことができます。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/taoyuan-to-taipei/2.jpg"></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[台北駅(台北車站)から桃園国際空港へバスで行く方法]]></title>
+    <link href="http://fly1tkg.github.io/2015/05/taipei-to-taoyuan/"/>
+    <updated>2015-05-09T09:35:48+00:00</updated>
+    <id>http://fly1tkg.github.io/2015/05/taipei-to-taoyuan</id>
+    <content type="html"><![CDATA[<p>台北市内から桃園国際空港までの移動はバスを利用すると安くてお得です。</p>
+
+<p>この記事では台北駅(台北車站)から出発するバスについて説明します。</p>
+
+<ul>
+<li>バス名: 國光客運1819系統</li>
+<li>料金: NT$125</li>
+<li>出発時刻: 04:00~24:20 10~15分間隔</li>
+<li>到着時間: 1時間ほど</li>
+<li>公式サイト: <a href="http://www.kingbus.com.tw/ticketPriceResult.php?sid=99">http://www.kingbus.com.tw/ticketPriceResult.php?sid=99</a></li>
+</ul>
+
+
+<p>桃園国際空港から台北駅(台北車站)へバスで行く方法はこちら
+<a href="http://fly1tkg.github.io/2015/05/taoyuan-to-taipei/">http://fly1tkg.github.io/2015/05/taoyuan-to-taipei/</a></p>
+
+<!--more-->
+
+
+<h2>台北駅(台北車站)からバス停までの移動</h2>
+
+<p>MRTなどで台北駅(台北車站)に到着したら忠孝西路の出口に向かって歩いていきます。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/taipei-to-taoyuan/1.jpg"></p>
+
+<p>バス停は台北西站A棟にあるので、案内が見えたらそちらに移動します。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/taipei-to-taoyuan/2.jpg"></p>
+
+<p>站前地下街を通っていきます。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/taipei-to-taoyuan/3.jpg"></p>
+
+<p>站前地下街を歩いて行くと台北西站A棟への出口が見えます。
+<img src="http://fly1tkg.github.io/images/2015/05/taipei-to-taoyuan/4.jpg"></p>
+
+<p>出口を出た所にある建物に入ります。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/taipei-to-taoyuan/5.jpg"></p>
+
+<h2>チケットの買い方</h2>
+
+<p>チケットは自動販売機で買えます。
+この機械は100元しか使えないので注意が必要です。
+カウンターでも買うことができます。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/taipei-to-taoyuan/6.jpg"></p>
+
+<p>これがチケット</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/taipei-to-taoyuan/7.jpg"></p>
+
+<h2>バスの乗り方</h2>
+
+<p>空港行きの所に並びましょう。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2015/05/taipei-to-taoyuan/8.jpg"></p>
+
+<p>荷物を預ける場合は第一ターミナルか第二ターミナルに行くかを係員に言いましょう。
+ターミナルワンかターミナルツーと言えばOKです。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[自作gemをS3でホスティングして利用する]]></title>
+    <link href="http://fly1tkg.github.io/2014/09/s3-gem/"/>
+    <updated>2014-09-15T15:02:29+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/09/s3-gem</id>
+    <content type="html"><![CDATA[<h2>Gemを作る</h2>
+
+<p>bundlerがインストールされた状態で</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>bundle gem fuga</span></code></pre></td></tr></table></div></figure>
+
+
+<p>適当に実装を追加したら</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rake build</span></code></pre></td></tr></table></div></figure>
+
+
+<p>で、pkg/fuga-0.0.1.gemというものができます。</p>
+
+<!--more-->
+
+
+<h2>S3に配置するファイルを作成する</h2>
+
+<p>まず作業ディレクトリを作ります</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>mkdir public
+</span><span class='line'>cd public</span></code></pre></td></tr></table></div></figure>
+
+
+<p>gemsというフォルダを作ってその中にさきほど生成したfuga-0.0.1.gemを配置します</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>mkdir gems
+</span><span class='line'>cp fuga-0.0.1.gem gems/</span></code></pre></td></tr></table></div></figure>
+
+
+<p>カレントディレクトリがpublicの状態で</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>gem generate_index</span></code></pre></td></tr></table></div></figure>
+
+
+<p>を実行すると必要なファイルが生成されます。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>.
+</span><span class='line'>├── gems
+</span><span class='line'>│   └── fuga-0.0.1.gem
+</span><span class='line'>├── latest_specs.4.8
+</span><span class='line'>├── latest_specs.4.8.gz
+</span><span class='line'>├── prerelease_specs.4.8
+</span><span class='line'>├── prerelease_specs.4.8.gz
+</span><span class='line'>├── quick
+</span><span class='line'>│   └── Marshal.4.8
+</span><span class='line'>│       └── fuga-0.0.1.gemspec.rz
+</span><span class='line'>├── specs.4.8
+</span><span class='line'>└── specs.4.8.gz</span></code></pre></td></tr></table></div></figure>
+
+
+<p>CreateボタンをクリックしてBucketを作成する</p>
+
+<h2>S3のbucketにファイルを配置する</h2>
+
+<p>publicフォルダ以下のファイルすべてのファイルをS3のbucketに保存して、aclをpublic_readにする。</p>
+
+<h2>実際に取得できるか確認する</h2>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>gem source 'https://s3-ap-northeast-1.amazonaws.com/&lt;bucket-name&gt;/'
+</span><span class='line'>gem search fuga -r</span></code></pre></td></tr></table></div></figure>
+
+
+<p>を実行して、fugaが見つかればOK</p>
+
+<h2>Gemfileで利用する</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Gemfile</span>
+</span><span class='line'><span class="n">source</span> <span class="s1">&#39;https://rubygems.org&#39;</span>
+</span><span class='line'><span class="n">source</span> <span class="s1">&#39;https://s3-ap-northeast-1.amazonaws.com/&lt;bucket-name&gt;/&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">gem</span> <span class="n">hoge</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>参考</h2>
+
+<p><a href="http://d.hatena.ne.jp/ux00ff/20121207/1354898619">http://d.hatena.ne.jp/ux00ff/20121207/1354898619</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[mockitoをAndroid4.3以上で動かす]]></title>
+    <link href="http://fly1tkg.github.io/2014/07/mockito-work-android-18/"/>
+    <updated>2014-07-30T01:37:59+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/07/mockito-work-android-18</id>
+    <content type="html"><![CDATA[<p>mockitoがAndroid4.3以上で動かない。以下のようなエラーメッセージが出ます。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>java.lang.IllegalArgumentException: dexcache == null (and no default could be found; consider setting the 'dexmaker.dexcache' system property)
+</span><span class='line'>at com.google.dexmaker.DexMaker.generateAndLoad(DexMaker.java:359)</span></code></pre></td></tr></table></div></figure>
+
+
+<p>dexmakerのAndroid4.3以上のバグのようなので(issueにあって対処法も書いてあるのにメンテされてないのかなあ）以下のようにすると利用できるようになります。</p>
+
+<!--more-->
+
+
+<h2>CustomInstrumentationTestRunnerを作成する</h2>
+
+<p>app/src/androidTest/java/your/package/Custominstrumentationtestrunner.javaを作成し、以下のように記述します。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CustomInstrumentationTestRunner</span> <span class="kd">extends</span> <span class="n">InstrumentationTestRunner</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span> <span class="kd">public</span> <span class="kt">void</span> <span class="n">onCreate</span> <span class="o">(</span><span class="kd">final</span> <span class="n">Bundle</span> <span class="n">arguments</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">super</span><span class="o">.</span><span class="na">onCreate</span><span class="o">(</span><span class="n">arguments</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// temporary workaround for an incompatibility in current dexmaker (1.1) implementation and Android &gt;= 4.3</span>
+</span><span class='line'>        <span class="c1">// cf. https://code.google.com/p/dexmaker/issues/detail?id=2 for details</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">&quot;dexmaker.dexcache&quot;</span><span class="o">,</span> <span class="n">getTargetContext</span><span class="o">().</span><span class="na">getCacheDir</span><span class="o">().</span><span class="na">toString</span><span class="o">());</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>build.gradleに記述を追加する</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">android</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">defaultConfig</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">testInstrumentationRunner</span> <span class="s">&quot;your.package.CustomInstrumentationTestRunner&quot;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上で動くようになります</p>
+
+<h2>追記: Android Studioの設定</h2>
+
+<p>Run > Edit Configrations… を選択し、Defaults > Android Testsの設定でSpecific instrumentation runnerに先ほどのCustomInstrumentationRunnerを入力します。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2014/07/android_studio.png"></p>
+
+<h2>参考</h2>
+
+<p><a href="https://code.google.com/p/dexmaker/issues/detail?id=2">https://code.google.com/p/dexmaker/issues/detail?id=2</a></p>
+
+<p><a href="http://stackoverflow.com/questions/12267572/mockito-dexmaker-on-android">http://stackoverflow.com/questions/12267572/mockito-dexmaker-on-android</a></p>
+
+<p><a href="http://tools.android.com/tech-docs/new-build-system/user-guide#TOC-Testing">http://tools.android.com/tech-docs/new-build-system/user-guide#TOC-Testing</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[werckerのAndroidエミュレータでSDカードを使う]]></title>
+    <link href="http://fly1tkg.github.io/2014/07/android-emu-sdcard/"/>
+    <updated>2014-07-03T12:30:33+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/07/android-emu-sdcard</id>
+    <content type="html"><![CDATA[<p>werckerには公式のStepでAndroidのエミュレータをセットアップするすることができます</p>
+
+<p><a href="https://app.wercker.com/#applications/5241920d4f6b6b786f000586/tab/details">https://app.wercker.com/#applications/5241920d4f6b6b786f000586/tab/details</a></p>
+
+<p>しかし、このStepだとSDカードがマウントされていないため、SDカードを利用するユニットテストができません。</p>
+
+<!--more-->
+
+
+<p>SDカードをマウントしたエミュレータは以下の様なコードで作成できます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>android create avd --force -n wercker -t android-19 --abi armeabi-v7a -c 256M
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>そこでSDカードをマウントしたエミュレータを起動するStepを公式からForkして作りました。</p>
+
+<p><a href="https://app.wercker.com/#applications/539e93962e6afc0632000d9e/tab/details">https://app.wercker.com/#applications/539e93962e6afc0632000d9e/tab/details</a></p>
+
+<p>そのうちSDカードの容量を指定できるようにオプションを追加したりしようと思います。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[werckerでAndroidエミュレータが動かなくなったのでメモ]]></title>
+    <link href="http://fly1tkg.github.io/2014/07/wercker-android-emulator/"/>
+    <updated>2014-07-01T01:22:40+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/07/wercker-android-emulator</id>
+    <content type="html"><![CDATA[<p>昨日からこんなメッセージでwercker上のAndroidエミュレータが起動しなくなっていました。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Error: Unable to find a 'userdata.img' file for ABI armeabi-v7a to copy into the AVD folder.</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<!--more-->
+
+
+<p>古いplatform-tools向けにAndroidエミュレータのイメージファイルを配布しなくなっているからみたいなので、platform-toolsを先に更新するようにと、filterの名前を変更して、wercker.ymlを更新しました。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">build</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="c1"># The steps that will be executed on build</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">steps</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">script</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">show base information</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">code</span><span class="p-Indicator">:</span> <span class="p-Indicator">|</span>
+</span><span class='line'>          <span class="no">gradle -v</span>
+</span><span class='line'>          <span class="no">echo $ANDROID_HOME</span>
+</span><span class='line'>          <span class="no">echo $ANDROID_SDK_VERSION</span>
+</span><span class='line'>          <span class="no">echo $ANDROID_BUILD_TOOLS</span>
+</span><span class='line'>          <span class="no">echo $ANDROID_UPDATE_FILTER</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">android-sdk-update</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">filter</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">tools,platform-tools</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">android-sdk-update</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">filter</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">sys-img-armeabi-v7a-android-18</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>またはboxであらかじめシステムイメージ入りのものを準備しておくのがいいと思いました。</p>
+
+<p>とりあえずメモ書きです。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[WordpressからGitHub pages+Octopressに移行した]]></title>
+    <link href="http://fly1tkg.github.io/2014/06/wordpress-to-octopress/"/>
+    <updated>2014-06-29T11:34:45+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/06/wordpress-to-octopress</id>
+    <content type="html"><![CDATA[<p>今日WordpressからOctopressに移行しました。</p>
+
+<p>Octopressとは、JekyllというRuby製の静的サイト生成ツールを使って静的なブログを生成するフレームワークです。</p>
+
+<p><a href="http://octopress.org/docs/">http://octopress.org/docs/</a></p>
+
+<p>移行は以下の手順で行いました。</p>
+
+<ul>
+<li>Octopressの導入</li>
+<li>Wordpressの記事をJekyll向けにexport</li>
+<li>GitHub pagesにDeploy</li>
+<li>独自ドメインを設定する</li>
+<li>werckerを使ってDeployの自動化</li>
+</ul>
+
+
+<!--more-->
+
+
+<h2>Octopressの導入</h2>
+
+<p>Octopressの導入については以下のリンクで説明されています。</p>
+
+<p><a href="http://octopress.org/docs/setup/">http://octopress.org/docs/setup/</a></p>
+
+<p>OctopressはRuby1.9.3以上がインストールされている必要があります。rbenvやRVMでインストールをしておきましょう。</p>
+
+<p>以下のようにoctopressをcloneします</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>git clone git://github.com/imathis/octopress.git octopress
+</span><span class='line'><span class="nb">cd </span>octopress
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>次にbundlerのインストールと必要Gemのインストール</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>gem install bundler
+</span><span class='line'>bundle install
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最後にデフォルトのテーマのインストールです</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>rake install
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>_config.ymlにブログの情報を書きます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">url</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">http://b.fly1tkg.com</span>
+</span><span class='line'><span class="l-Scalar-Plain">title</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">fly1tkg blog</span>
+</span><span class='line'><span class="l-Scalar-Plain">subtitle</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">いろいろ</span>
+</span><span class='line'><span class="l-Scalar-Plain">author</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Shoichi Takagi</span>
+</span><span class='line'><span class="l-Scalar-Plain">simple_search</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">https://www.google.com/search</span>
+</span><span class='line'><span class="l-Scalar-Plain">description</span><span class="p-Indicator">:</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Wordpressの記事をJekyll向けにexport</h2>
+
+<p>Wordpress to Jekyll exporterというWordpressのプラグインを利用しました。</p>
+
+<p><a href="https://github.com/benbalter/wordpress-to-jekyll-exporter">https://github.com/benbalter/wordpress-to-jekyll-exporter</a></p>
+
+<h3>使い方</h3>
+
+<ul>
+<li>このリポジトリの中身を/wp-content/plugins/フォルダに入れる</li>
+<li>php.iniに<code>extention=zip.so</code>のコメントアウトが外れていることを確認</li>
+<li>WordpressのダッシュボードからPluginを有効化</li>
+<li>ToolsのメニューからExport to Jekyllを選択する</li>
+</ul>
+
+
+<p>ダウンロードしたExportファイルを_config.yml以外を先程のOctopressのフォルダに入れればOKです</p>
+
+<p>基本的にはちゃんと変換されますが、Wordpressのプラグインを利用した記述は時々おかしくなっているので修正します。
+僕は、Syntax highlighterの部分がおかしくなっていました。</p>
+
+<p>またiframeを利用したyoutubeの貼り付けなどがおかしくなっていたので手動で修正しました。</p>
+
+<h2>GitHub pagesにDeploy</h2>
+
+<p>Github pagesの作り方については以下のリンクに説明があります。</p>
+
+<p><a href="https://pages.github.com/">https://pages.github.com/</a></p>
+
+<p>ユーザネーム.github.ioでリポジトリを作り、そこにhtmlをpushするとユーザネーム.github.ioのアドレスで配信されるようになります。</p>
+
+<p>Deploy先を以下のコマンドで設定できます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>rake setup_github_pages
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>途中でリポジトリのURLを聞かれるので、入力します。
+例) git@github.com:fly1tkg/fly1tkg.github.io.git</p>
+
+<p>そうすると以下のコマンドでdeployできるようになります。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>rake generate
+</span><span class='line'>rake deploy
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>独自ドメインを設定する</h2>
+
+<p>独自ドメインの設定については以下のリンクに説明があります。</p>
+
+<p><a href="https://help.github.com/articles/setting-up-a-custom-domain-with-github-pages">https://help.github.com/articles/setting-up-a-custom-domain-with-github-pages</a></p>
+
+<p>CNAMEというファイルを作成して、中身は設定したい独自ドメインのみを記述します。
+このブログだったらb.fly1tkg.comをCNAMEに書きます。</p>
+
+<p>そしてそのCNAMEファイルをGitに追加してGitHubにpushします。</p>
+
+<p>次にDNSプロバイダで独自ドメインのDNS設定をします。</p>
+
+<p>CNAMEレコードでユーザネーム.github.ioに転送するように設定します。詳しくは各DNSプロバイダのドキュメントを参照すると良いと思います。</p>
+
+<p>僕はRoute53を利用しているので、さくっとCNAMEレコードを追加しました。</p>
+
+<h2>werckerを使ってDeployの自動化</h2>
+
+<p>Octopressのコードはgithub.ioのリポジトリとは別で管理するので、記事を書くたびに両方にデプロイするのは面倒なので、masterにコミットした内容を自動でgithub.ioにデプロイするようにします。</p>
+
+<p>デプロイの自動化はCircle CIやwerckerを利用するといいと思います。今回はwerckerを利用しました。</p>
+
+<p><a href="http://wercker.com">http://wercker.com</a></p>
+
+<p>GitHub pagesへのDeployについては以下のリンクが参考になります。</p>
+
+<p><a href="http://blog.wercker.com/2013/07/25/Using-wercker-to-publish-to-GitHub-pages.html">http://blog.wercker.com/2013/07/25/Using-wercker-to-publish-to-GitHub-pages.html</a></p>
+
+<p>werckerでアプリを作成して、wercker.ymlをリポジトリに追加します。</p>
+
+<p>僕は以下の様な設定をしました。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">box</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">wercker/rvm@2.0.1</span>
+</span><span class='line'><span class="l-Scalar-Plain">build</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">steps</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">wercker/bundle-install@1.1.1</span>
+</span><span class='line'><span class="l-Scalar-Plain">deploy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">steps</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">script</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">configure</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">code</span><span class="p-Indicator">:</span> <span class="p-Indicator">|</span>
+</span><span class='line'>          <span class="no">git config --global user.email &quot;fly1tkg@gmail.com&quot;</span>
+</span><span class='line'>          <span class="no">git config --global user.name &quot;wercker&quot;</span>
+</span><span class='line'>          <span class="no">bundle ex rake setup_github_pages\[&quot;$GIT_REMOTE&quot;\]</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">script</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">deploy to github</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">code</span><span class="p-Indicator">:</span> <span class="p-Indicator">|</span>
+</span><span class='line'>          <span class="no">bundle ex rake generate</span>
+</span><span class='line'>          <span class="no">bundle ex rake deploy</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Deployの設定をする</h3>
+
+<p>werckerのアプリの設定ページでDeployの設定ができます。</p>
+
+<p>Add Deploy targetのボタン &ndash;> Custom deployを選択して、</p>
+
+<ul>
+<li>Deploy target name: github-pages</li>
+<li>Auto deploy: チェック, master</li>
+</ul>
+
+
+<p>と設定しました。</p>
+
+<p>Deploy pipelineの項目でAdd new variableというボタンを選択することでデプロイ時の環境変数を設定することができます。</p>
+
+<p>以下のように設定しました。</p>
+
+<ul>
+<li>name: GIT_REMOTE</li>
+<li>value: <code>https://GitHubのアプリケーションTOKEN@github.com/ユーザ名/リポジトリ名.git</code></li>
+</ul>
+
+
+<p>アプリケーションTOKENについてはGitHubのSettingのApplicationのセクションで新規作成できます。
+wercker用のものを発行しておきましょう。</p>
+
+<p>Deployはrake deployで行うのですが、デプロイを簡単にするためにgitのforceオプションでコミットするように変更します。</p>
+
+<p>Rakefileを開き、pushタスクの<code>git push</code>に<code>-f</code>をつけます</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">desc</span> <span class="s2">&quot;deploy public directory to github pages&quot;</span>
+</span><span class='line'><span class="n">multitask</span> <span class="ss">:push</span> <span class="k">do</span>
+</span><span class='line'>  <span class="nb">puts</span> <span class="s2">&quot;## Deploying branch to Github Pages &quot;</span>
+</span><span class='line'>  <span class="nb">puts</span> <span class="s2">&quot;## Pulling any updates from Github Pages &quot;</span>
+</span><span class='line'>  <span class="n">cd</span> <span class="s2">&quot;</span><span class="si">#{</span><span class="n">deploy_dir</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="nb">system</span> <span class="s2">&quot;git pull&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>  <span class="p">(</span><span class="no">Dir</span><span class="o">[</span><span class="s2">&quot;</span><span class="si">#{</span><span class="n">deploy_dir</span><span class="si">}</span><span class="s2">/*&quot;</span><span class="o">]</span><span class="p">)</span><span class="o">.</span><span class="n">each</span> <span class="p">{</span> <span class="o">|</span><span class="n">f</span><span class="o">|</span> <span class="n">rm_rf</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>  <span class="no">Rake</span><span class="o">::</span><span class="no">Task</span><span class="o">[</span><span class="ss">:copydot</span><span class="o">].</span><span class="n">invoke</span><span class="p">(</span><span class="n">public_dir</span><span class="p">,</span> <span class="n">deploy_dir</span><span class="p">)</span>
+</span><span class='line'>  <span class="nb">puts</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## Copying </span><span class="si">#{</span><span class="n">public_dir</span><span class="si">}</span><span class="s2"> to </span><span class="si">#{</span><span class="n">deploy_dir</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'>  <span class="n">cp_r</span> <span class="s2">&quot;</span><span class="si">#{</span><span class="n">public_dir</span><span class="si">}</span><span class="s2">/.&quot;</span><span class="p">,</span> <span class="n">deploy_dir</span>
+</span><span class='line'>  <span class="n">cd</span> <span class="s2">&quot;</span><span class="si">#{</span><span class="n">deploy_dir</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="nb">system</span> <span class="s2">&quot;git add -A&quot;</span>
+</span><span class='line'>    <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Site updated at </span><span class="si">#{</span><span class="no">Time</span><span class="o">.</span><span class="n">now</span><span class="o">.</span><span class="n">utc</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## Committing: </span><span class="si">#{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'>    <span class="nb">system</span> <span class="s2">&quot;git commit -m </span><span class="se">\&quot;</span><span class="si">#{</span><span class="n">message</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2">&quot;</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## Pushing generated </span><span class="si">#{</span><span class="n">deploy_dir</span><span class="si">}</span><span class="s2"> website&quot;</span>
+</span><span class='line'>    <span class="nb">system</span> <span class="s2">&quot;git push -f origin </span><span class="si">#{</span><span class="n">deploy_branch</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## Github Pages deploy complete&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>これでDeployの設定が完了です。masterブランチに変更をpushすると自動でgithub-pagesにdeployされるようになります。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[werckerのTestFairy Stepを作った]]></title>
+    <link href="http://fly1tkg.github.io/2014/06/wercker-testfairy-step/"/>
+    <updated>2014-06-13T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/06/wercker-testfairy-step</id>
+    <content type="html"><![CDATA[<p>werckerのTestFairy stepを作りました。これを利用することでTestFairyにAndroidのapkをアップロードできます。</p>
+
+<p><a href="https://app.wercker.com/#applications/539a59212e6afc0632000196/tab/details">https://app.wercker.com/#applications/539a59212e6afc0632000196/tab/details</a></p>
+
+<p>ソースコード</p>
+
+<p><a href="https://github.com/fly1tkg/wercker-step-testfairy">https://github.com/fly1tkg/wercker-step-testfairy</a></p>
+
+<!--more-->
+
+
+<h2>使い方</h2>
+
+<h3>1. wercker.ymlのdeploy stepにfly1tkg/testfairyを追加します。</h3>
+
+<p>必須のオプションは2つです。</p>
+
+<ul>
+<li>api_key: TestFairyのAPI Key、後で設定する環境変数にしておくのがいいと思います。</li>
+<li>apk_file: apkのパスを入れてください</li>
+</ul>
+
+
+<p>API Keyは<span style="color: #636664;"> </span><a style="color: #368cb9;" href="https://app.testfairy.com/settings"><a href="https://app.testfairy.com/settings">https://app.testfairy.com/settings</a></a> から見ることができます。</p>
+
+<p>例</p>
+
+<pre class="brush: actionscript3; gutter: true">deploy:
+  steps:
+    - fly1tkg/testfairy:
+        api_key: $TESTFAIRY_API_KEY
+        apk_file: app/build/outputs/apk/app-debug-unaligned.apk</pre>
+
+
+<h3>2. deployの設定をする</h3>
+
+<p>Deploy TargetsのAdd Deploy Targetをクリックして、Custom Deployを選択します。</p>
+
+<p>ここに環境変数でTestFairyのAPI Keyを入れておきます。</p>
+
+<p>例</p>
+
+<ul>
+<li>Deploy Target Name: testfairy</li>
+<li>Environment Variable: TESTFAIRY_API_KEY: &lt;TestFairyのAPIキー></li>
+</ul>
+
+
+<p>これで完了です。Auto deployの設定をしている場合は自動で、していない場合はdeploy to のボタンからdeployすると、ビルド結果のapkがTestFairyにアップロードされます。</p>
+
+<h2>オプションについて</h2>
+
+<ul>
+<li>proguard_file: proguardのマッピングファイルのパス</li>
+<li>testers_groups: カンマ区切りで新しいビルドを通知するテスターグループを指定できます</li>
+<li>metrics: カンマ区切りで記録するメトリクスを指定できます</li>
+<li>max_duration: 最大のセッションの長さを指定できます。デフォルトは&#8221;10m&#8221;(10分)</li>
+<li>video: ビデオをレコードするかどうかを指定できます。 デフォルトは&#8221;on&#8221;</li>
+<li>video_quality: ビデオの画質設定です。&#8221;high&#8221;, &#8220;medium&#8221;, &#8220;low&#8221;から選べます。デフォルトは&#8221;high&#8221;</li>
+<li>video_rate: ビデオの1秒辺り何フレーム記録するか指定できます。デフォルトは&#8221;1.o&#8221;</li>
+<li>icon_watermark: アプリのアイコンにウォータマークをつけるかどうか。デフォルトは&#8221;off&#8221;</li>
+<li>comment: メールに載せるリリースノートを指定できます</li>
+</ul>
+
+
+<p>利用できるメトリクス</p>
+
+<ul>
+<li>cpu: userとkernelのCPU利用率</li>
+<li>memory: プロセスのprivateとsharedのメモリ分析</li>
+<li>network: プロセスのネットワーク利用率</li>
+<li>phone-signal: 電波の強さ</li>
+<li>logcat: プロセスのlogcatの出力(READ_LOGSのpermissionが追加される)</li>
+<li>gps: アプリが利用してる場合のみ、位置情報</li>
+<li>battery: バッテリーの状態(BATTERY_STASのpermissionが追加される)</li>
+<li>mic: アプリで利用している場合のみ、マイクの音声</li>
+</ul>
+
+
+<p>例</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">deploy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">steps</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">fly1tkg/testfairy</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">api_key</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">$TESTFAIRY_API_KEY</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">apk_file</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">app/build/outputs/apk/app-debug-unaligned.apk</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">testers_groups</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">tester</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">icon_watermark</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">on</span>
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[無料でAndroidアプリの自動テスト+テスト配信]]></title>
+    <link href="http://fly1tkg.github.io/2014/06/android-ci-testfairy/"/>
+    <updated>2014-06-12T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/06/android-ci-testfairy</id>
+    <content type="html"><![CDATA[<p>以下のサービスを使って、Androidアプリの自動テストとテスト配信をしました。</p>
+
+<ul>
+<li><a href="https://github.com/">GitHub</a> (Gitのホスティングサービス)</li>
+<li><a href="http://wercker.com/">wercker</a> (自動テスト、デプロイのサービス、読み方はworker)</li>
+<li><a href="https://www.testfairy.com/">TestFairy</a> (Androidのβテスト配信サービス)</li>
+</ul>
+
+
+<p>Androidアプリの開発環境は以下のものを利用しました</p>
+
+<ul>
+<li>Android Studio 0.6.0</li>
+<li>Android SDK 4.4.2</li>
+<li>Android Build Tool v19.1.0</li>
+</ul>
+
+
+<!--more-->
+
+
+<h2>1. Androidアプリの作成とテストを書く</h2>
+
+<p>Android Studioを使ってアプリケーションを作成し、テストを書きます。</p>
+
+<p>コードはGitHubにpushしておきます。</p>
+
+<p>また、リポジトリのCoraboratorにwerckerbotを追加する必要があります。</p>
+
+<h2>2. wercker.ymlを作成する</h2>
+
+<p>werckerから公式でチュートリアルがあるので基本的にはそれに沿っていけばOKです、</p>
+
+<p><a href="http://wercker.com/android/">http://wercker.com/android/</a></p>
+
+<p>しかし、ハマりどころがあります。最新のAndroid Studio (0.6.0)ではBuild Toolが19.1.0以上でなければいけないのでその関係で以下の2点に気をつける必要があります。</p>
+
+<ul>
+<li>ビルド結果を配置するPathがBuild Tool v19.0.3と違う</li>
+<li>werckerから提供されているAndroidのテスト環境(Box)がBuild Tool v19.1.0がインストールされていない</li>
+</ul>
+
+
+<p>前者はwercker.ymlのPathを調整することで解決できます。具体的には以下のようにしました。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">build</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="c1"># The steps that will be executed on build</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">steps</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">script</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">show base information</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">code</span><span class="p-Indicator">:</span> <span class="p-Indicator">|</span>
+</span><span class='line'>          <span class="no">gradle -v</span>
+</span><span class='line'>          <span class="no">echo $ANDROID_HOME</span>
+</span><span class='line'>          <span class="no">echo $ANDROID_SDK_VERSION</span>
+</span><span class='line'>          <span class="no">echo $ANDROID_BUILD_TOOLS</span>
+</span><span class='line'>          <span class="no">echo $ANDROID_UPDATE_FILTER</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">android-sdk-update</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">filter</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">sysimg-18</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">setup-android-emulator</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">target</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">android-18</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">script</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">run gradle connectedCheck</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">code</span><span class="p-Indicator">:</span> <span class="p-Indicator">|</span>
+</span><span class='line'>          <span class="no">gradle --project-cache-dir=$WERCKER_CACHE_DIR connectedCheck</span>
+</span><span class='line'>    <span class="c1"># A step that executes `gradle build` command</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">script</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">run gradle</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">code</span><span class="p-Indicator">:</span> <span class="p-Indicator">|</span>
+</span><span class='line'>          <span class="no">gradle --full-stacktrace -q --project-cache-dir=$WERCKER_CACHE_DIR build</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="l-Scalar-Plain">after-steps</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="c1"># Use the build results</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">script</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">inspect build result</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">code</span><span class="p-Indicator">:</span> <span class="p-Indicator">|</span>
+</span><span class='line'>          <span class="no">cp app/build/outputs/apk/*.apk $WERCKER_REPORT_ARTIFACTS_DIR</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>後者の問題は、werckerのテスト環境であるBoxを自分でビルドすることで解決できます。werckerのAndroidのBoxはGitHub上で公開されているので、forkしてBuild Tool v19.1.0をインストールしました。wercker.ymlの先頭に以下のように記述することで利用することができます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">box</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">fly1tkg/android</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>3. werckerにアプリを追加する</h2>
+
+<p>ログインして、左のサイドバーからAdd Appをクリックするとアプリを追加できます</p>
+
+<p>ガイドにそっていけば大丈夫だと思います。</p>
+
+<h2>4. TestFairyにログイン、APIキーを取得、テスターの登録</h2>
+
+<p>TestFairyにログインして、上タブのAccount &ndash;> Settingsをクリックすると、下の方にAPI Keyが表示されていると思います。これをメモしておきます。</p>
+
+<p>また、テスターを登録します。上タブのTestersをクリックして、テスターの管理画面を開きます。ここで、テスターとグループを設定してください。あとで設定したグループに対してテストアプリを配信するように設定します。</p>
+
+<h2>5 werckerからTestFairyにデプロイする設定をする</h2>
+
+<p>アプリの詳細画面を開いて、Settingsタブをクリックして設定画面を開きます。</p>
+
+<p>Deploy TargetsのAdd Deploy Targetをクリックして、Custom Deployを選択します。</p>
+
+<p>以下のように設定しました。</p>
+
+<ul>
+<li>Deploy Target Name: testfairy</li>
+<li>auto deploy: チェック</li>
+<li>branches: master</li>
+<li>Environment Variable: TESTFAIRY_API_KEY: &lt;TestFairyのAPIキー></li>
+<li>Protected: チェック</li>
+</ul>
+
+
+<p><img src="http://fly1tkg.github.io/images/2014/06/wercker.jpg"></p>
+
+<h2>6. wercker.ymlにデプロイ設定を追加する</h2>
+
+<p>以下のように設定しました。tester_groupsにはTestFairyで設定したテスターグループ名を入れてください。(複数の場合はカンマ区切り)</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">deploy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">steps</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">script</span><span class="p-Indicator">:</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">upload to testfairy</span>
+</span><span class='line'>        <span class="l-Scalar-Plain">code</span><span class="p-Indicator">:</span> <span class="p-Indicator">|</span>
+</span><span class='line'>          <span class="no">curl https://app.testfairy.com/api/upload/ -F apk_file=@app/build/outputs/apk/app-debug-unaligned.apk -F api_key=&quot;$TESTFAIRY_API_KEY&quot; -F comment=&quot;Deploy of commit: $WERCKER_GIT_COMMIT from branch: $WERCKER_GIT_BRANCH&quot; -F testers_groups=&amp;#039;me&amp;#039;&lt;/pre&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上で完了です。この設定だとmasterブランチにコードがコミットされるたびに、テストとアプリ配信が行われることになります。</p>
+
+<h2>今回のソースコード</h2>
+
+<p><a href="https://github.com/fly1tkg/hello-wercker-android">https://github.com/fly1tkg/hello-wercker-android</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Volleyでmultipart/form-dataを送信する]]></title>
+    <link href="http://fly1tkg.github.io/2014/03/volley-multipart-form-data/"/>
+    <updated>2014-03-23T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/03/volley-multipart-form-data</id>
+    <content type="html"><![CDATA[<p>はじめに書きますが、Volleyは<strong>画像ファイル等の大きいファイルを送ることには適していません</strong>。が、ちょっとファイルを送りたいときに、そこだけapacheのhttpclient等を使うのも微妙な気がするので、このエントリーではVolleyを使ったmultipart/form-dataの送り方を紹介します。</p>
+
+<!--more-->
+
+
+<h1>はじめに</h1>
+
+<p>multipart/form-dataを利用するために<strong>最新のhttpcoreとhttpmineを利用するのがよいです</strong>。<a href="http://hc.apache.org/downloads.cgi">http://hc.apache.org/downloads.cgi</a> から最新のHttpclientをダウンロードしてlibsのhttpcore.jarとhttpmine.jarを利用したり、maven、gradle経由でアプリに組み込んでください。</p>
+
+<h1>シンプルな実装</h1>
+
+<p><a href="http://stackoverflow.com/questions/16797468/how-to-send-a-multipart-form-data-post-in-android-with-volley">http://stackoverflow.com/questions/16797468/how-to-send-a-multipart-form-data-post-in-android-with-volley</a></p>
+
+<p>上記のリンクのようにmultipart/form-data用のリクエストを作成すると割りと簡単に実装できます。ポイントはgetBodyのメソッドでmultipart/form-data形式のバイナリをVolleyのRequestに渡す設計になっている所だと思います。</p>
+
+<p>もう少し実用的な設計にすると以下のようになります。第４引数と第５引数にはそれぞれkey-valueで送信するリクエストを渡します。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MultipartRequest</span> <span class="kd">extends</span> <span class="n">Request</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">MultipartEntity</span> <span class="n">entity</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MultipartEntity</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Response</span><span class="o">.</span><span class="na">Listener</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">mListener</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">mStringParts</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">File</span><span class="o">&gt;</span> <span class="n">mFileParts</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">MultipartRequest</span><span class="o">(</span><span class="n">String</span> <span class="n">url</span><span class="o">,</span> <span class="n">Response</span><span class="o">.</span><span class="na">Listener</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">listener</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">Response</span><span class="o">.</span><span class="na">ErrorListener</span> <span class="n">errorListener</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">stringParts</span><span class="o">,</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">File</span><span class="o">&gt;</span> <span class="n">fileParts</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">super</span><span class="o">(</span><span class="n">Method</span><span class="o">.</span><span class="na">POST</span><span class="o">,</span> <span class="n">url</span><span class="o">,</span> <span class="n">errorListener</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">mListener</span> <span class="o">=</span> <span class="n">listener</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">mStringParts</span> <span class="o">=</span> <span class="n">stringParts</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">mFileParts</span> <span class="o">=</span> <span class="n">fileParts</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">buildMultipartEntity</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">buildMultipartEntity</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">Map</span><span class="o">.</span><span class="na">Entry</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">mStringParts</span><span class="o">.</span><span class="na">entrySet</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">entity</span><span class="o">.</span><span class="na">addPart</span><span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">getKey</span><span class="o">(),</span> <span class="k">new</span> <span class="n">StringBody</span><span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">getValue</span><span class="o">()));</span>
+</span><span class='line'>            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">UnsupportedEncodingException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">VolleyLog</span><span class="o">.</span><span class="na">e</span><span class="o">(</span><span class="s">&quot;UnsupportedEncodingException&quot;</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">Map</span><span class="o">.</span><span class="na">Entry</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">File</span><span class="o">&gt;</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">mFileParts</span><span class="o">.</span><span class="na">entrySet</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">entity</span><span class="o">.</span><span class="na">addPart</span><span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">getKey</span><span class="o">(),</span> <span class="k">new</span> <span class="n">FileBody</span><span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">getValue</span><span class="o">()));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getBodyContentType</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">entity</span><span class="o">.</span><span class="na">getContentType</span><span class="o">().</span><span class="na">getValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">getBody</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">AuthFailureError</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">ByteArrayOutputStream</span> <span class="n">bos</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ByteArrayOutputStream</span><span class="o">();</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">entity</span><span class="o">.</span><span class="na">writeTo</span><span class="o">(</span><span class="n">bos</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">VolleyLog</span><span class="o">.</span><span class="na">e</span><span class="o">(</span><span class="s">&quot;IOException writing to ByteArrayOutputStream&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">bos</span><span class="o">.</span><span class="na">toByteArray</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="n">Response</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">parseNetworkResponse</span><span class="o">(</span><span class="n">NetworkResponse</span> <span class="n">response</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Response</span><span class="o">.</span><span class="na">success</span><span class="o">(</span><span class="s">&quot;Uploaded&quot;</span><span class="o">,</span> <span class="n">getCacheEntry</span><span class="o">());</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">deliverResponse</span><span class="o">(</span><span class="n">String</span> <span class="n">response</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">mListener</span><span class="o">.</span><span class="na">onResponse</span><span class="o">(</span><span class="n">response</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>独自のHurlStackと共に利用する</h1>
+
+<p>先のシンプルな実装ではgetBodyで<strong>OOM(Out of memory)</strong>が発生する場合があります。というのも送信するファイルサイズが大きい場合Multipart entityをByteArrayInputStreamに書き込む処理が問題になるからです。簡単に言うとここで送信したいデータ分のメモリが確保できなければ、メモリ不足で強制終了するというわけです。</p>
+
+<p>Volleyの通信の処理はHurlStackというクラスにかかれています。VolleyのRequest queueを作成する際に、独自のHurlStackを渡すことができるようになっているのを利用して、Multipart/form-dataの時はファイルをストリームで渡せるようにカスタマイズしたHurlStackを渡して、OOMを防ぎます。</p>
+
+<p>MultipartRequestクラス、ここでMultipart entityを外部へ渡せるようにしておきます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MultipartRequest</span> <span class="kd">extends</span> <span class="n">Request</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">MultipartEntity</span> <span class="n">entity</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MultipartEntity</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Response</span><span class="o">.</span><span class="na">Listener</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">mListener</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">mStringParts</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">File</span><span class="o">&gt;</span> <span class="n">mFileParts</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">MultipartRequest</span><span class="o">(</span><span class="n">String</span> <span class="n">url</span><span class="o">,</span> <span class="n">Response</span><span class="o">.</span><span class="na">Listener</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">listener</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">Response</span><span class="o">.</span><span class="na">ErrorListener</span> <span class="n">errorListener</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">stringParts</span><span class="o">,</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">File</span><span class="o">&gt;</span> <span class="n">fileParts</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">super</span><span class="o">(</span><span class="n">Method</span><span class="o">.</span><span class="na">POST</span><span class="o">,</span> <span class="n">url</span><span class="o">,</span> <span class="n">errorListener</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">mListener</span> <span class="o">=</span> <span class="n">listener</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">mStringParts</span> <span class="o">=</span> <span class="n">stringParts</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">mFileParts</span> <span class="o">=</span> <span class="n">fileParts</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">buildMultipartEntity</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">buildMultipartEntity</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">Map</span><span class="o">.</span><span class="na">Entry</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">mStringParts</span><span class="o">.</span><span class="na">entrySet</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">entity</span><span class="o">.</span><span class="na">addPart</span><span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">getKey</span><span class="o">(),</span> <span class="k">new</span> <span class="n">StringBody</span><span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">getValue</span><span class="o">()));</span>
+</span><span class='line'>            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">UnsupportedEncodingException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">VolleyLog</span><span class="o">.</span><span class="na">e</span><span class="o">(</span><span class="s">&quot;UnsupportedEncodingException&quot;</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">Map</span><span class="o">.</span><span class="na">Entry</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">File</span><span class="o">&gt;</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">mFileParts</span><span class="o">.</span><span class="na">entrySet</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">entity</span><span class="o">.</span><span class="na">addPart</span><span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">getKey</span><span class="o">(),</span> <span class="k">new</span> <span class="n">FileBody</span><span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">getValue</span><span class="o">()));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getBodyContentType</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">entity</span><span class="o">.</span><span class="na">getContentType</span><span class="o">().</span><span class="na">getValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">MultipartEntity</span> <span class="nf">getEntity</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">entity</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="n">Response</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">parseNetworkResponse</span><span class="o">(</span><span class="n">NetworkResponse</span> <span class="n">response</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Response</span><span class="o">.</span><span class="na">success</span><span class="o">(</span><span class="s">&quot;Uploaded&quot;</span><span class="o">,</span> <span class="n">getCacheEntry</span><span class="o">());</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">deliverResponse</span><span class="o">(</span><span class="n">String</span> <span class="n">response</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">mListener</span><span class="o">.</span><span class="na">onResponse</span><span class="o">(</span><span class="n">response</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>独自のHurlStack、MultiPartRequestの時だけ独自の通信処理を利用するようにします</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MultiPartStack</span> <span class="kd">extends</span> <span class="n">HurlStack</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">final</span> <span class="kd">static</span> <span class="n">String</span> <span class="n">HEADER_CONTENT_TYPE</span> <span class="o">=</span> <span class="s">&quot;Content-Type&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">HttpResponse</span> <span class="nf">performRequest</span><span class="o">(</span><span class="n">Request</span><span class="o">&lt;?&gt;</span> <span class="n">request</span><span class="o">,</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">additionalHeaders</span><span class="o">)</span>
+</span><span class='line'>            <span class="kd">throws</span> <span class="n">AuthFailureError</span><span class="o">,</span> <span class="n">IOException</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(!(</span><span class="n">request</span> <span class="k">instanceof</span> <span class="n">MultipartRequest</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="kd">super</span><span class="o">.</span><span class="na">performRequest</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">additionalHeaders</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">HttpPost</span> <span class="n">httpRequest</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HttpPost</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getUrl</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">httpRequest</span><span class="o">.</span><span class="na">addHeader</span><span class="o">(</span><span class="n">HEADER_CONTENT_TYPE</span><span class="o">,</span> <span class="n">request</span><span class="o">.</span><span class="na">getBodyContentType</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">setMultiPartBody</span><span class="o">(</span><span class="n">httpRequest</span><span class="o">,</span> <span class="n">request</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">addHeaders</span><span class="o">(</span><span class="n">httpRequest</span><span class="o">,</span> <span class="n">additionalHeaders</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">addHeaders</span><span class="o">(</span><span class="n">httpRequest</span><span class="o">,</span> <span class="n">request</span><span class="o">.</span><span class="na">getHeaders</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">HttpParams</span> <span class="n">httpParams</span> <span class="o">=</span> <span class="n">httpRequest</span><span class="o">.</span><span class="na">getParams</span><span class="o">();</span>
+</span><span class='line'>        <span class="kt">int</span> <span class="n">timeoutMs</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getTimeoutMs</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">HttpConnectionParams</span><span class="o">.</span><span class="na">setConnectionTimeout</span><span class="o">(</span><span class="n">httpParams</span><span class="o">,</span> <span class="mi">5000</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">HttpConnectionParams</span><span class="o">.</span><span class="na">setSoTimeout</span><span class="o">(</span><span class="n">httpParams</span><span class="o">,</span> <span class="n">timeoutMs</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">SchemeRegistry</span> <span class="n">registry</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SchemeRegistry</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">registry</span><span class="o">.</span><span class="na">register</span><span class="o">(</span><span class="k">new</span> <span class="n">Scheme</span><span class="o">(</span><span class="s">&quot;http&quot;</span><span class="o">,</span> <span class="k">new</span> <span class="n">PlainSocketFactory</span><span class="o">(),</span> <span class="mi">80</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">registry</span><span class="o">.</span><span class="na">register</span><span class="o">(</span><span class="k">new</span> <span class="n">Scheme</span><span class="o">(</span><span class="s">&quot;https&quot;</span><span class="o">,</span> <span class="n">SSLSocketFactory</span><span class="o">.</span><span class="na">getSocketFactory</span><span class="o">(),</span> <span class="mi">443</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ThreadSafeClientConnManager</span> <span class="n">manager</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ThreadSafeClientConnManager</span><span class="o">(</span><span class="n">httpParams</span><span class="o">,</span> <span class="n">registry</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">HttpClient</span> <span class="n">httpClient</span> <span class="o">=</span> <span class="k">new</span> <span class="n">DefaultHttpClient</span><span class="o">(</span><span class="n">manager</span><span class="o">,</span> <span class="n">httpParams</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">httpClient</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="n">httpRequest</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">addHeaders</span><span class="o">(</span><span class="n">HttpUriRequest</span> <span class="n">httpRequest</span><span class="o">,</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">headers</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">key</span> <span class="o">:</span> <span class="n">headers</span><span class="o">.</span><span class="na">keySet</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">httpRequest</span><span class="o">.</span><span class="na">setHeader</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">headers</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">setMultiPartBody</span><span class="o">(</span><span class="n">HttpEntityEnclosingRequestBase</span> <span class="n">httpRequest</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">Request</span><span class="o">&lt;?&gt;</span> <span class="n">request</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">AuthFailureError</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">request</span> <span class="k">instanceof</span> <span class="n">MultipartRequest</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">httpRequest</span><span class="o">.</span><span class="na">setEntity</span><span class="o">(((</span><span class="n">MultipartRequest</span><span class="o">)</span> <span class="n">request</span><span class="o">).</span><span class="na">getEntity</span><span class="o">());</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>このMultiPartStackを利用したRequestQueueは以下のように利用できます</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">RequestQueue</span> <span class="n">queue</span> <span class="o">=</span> <span class="n">Volley</span><span class="o">.</span><span class="na">newRequestQueue</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="k">new</span> <span class="n">MultiPartStack</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上のようなコードで大きいファイルの送信もOOMになることなくできます。</p>
+
+<h1>補足: multipart/form-dataとは？</h1>
+
+<p><a href="http://d.hatena.ne.jp/satox/20110726/1311665904">http://d.hatena.ne.jp/satox/20110726/1311665904</a></p>
+
+<p>上記のリンク等が参考になるのですが、基本的にはHeaderでboundaryと呼ばれる仕切り文字列を指定して、Bodyで送信したいデータをboundaryで区切ってまとめて送信してしまう通信方法です。もっといい仕様はなかったのか、、、</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Androidアプリ開発者向けBitmask入門]]></title>
+    <link href="http://fly1tkg.github.io/2014/03/android-bitmask/"/>
+    <updated>2014-03-01T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/03/android-bitmask</id>
+    <content type="html"><![CDATA[<h1>ビットマスク(Bitmask)とは</h1>
+
+<p>ビット演算の一つでいわゆるフラグ管理に利用されています。回路の仕組み上ビットマスクなどのビット演算はとても高速に処理できます。</p>
+
+<p>ビットマスクはたとえばLinuxといったOSのファイルのアクセス権の管理に利用されています。ファイルの実行、読み込み、書き込みの権限は3bitで表現されます。(括弧内は10進数) 1桁目は実行権限、2桁目は読み込み権限、3桁目は書き込み権限を表しています。</p>
+
+<ul>
+<li>000 (0) アクセス権がない</li>
+<li>001 (1) 実行権限</li>
+<li>010 (2) 読み込み権限</li>
+<li>100 (4) 書き込み権限</li>
+<li>011 (3) 読み込み+実行</li>
+<li>111 (7) 書き込み+読み込み+実行</li>
+</ul>
+
+
+<!--more-->
+
+
+<h2>フラグをONにする</h2>
+
+<p>フラグをONにするときはビットマスクとの論理和(OR)で行えます。例えば読み込み権限のフラグをたてるには以下のようにします。</p>
+
+<ul>
+<li>000 OR 010 = 010</li>
+<li>101 OR 010 = 111</li>
+</ul>
+
+
+<h2>フラグをOFFにする</h2>
+
+<p>フラグをOFFにするときはビットマスクを反転したものとの論理積(AND)で行えます。例えば読み込み権限のフラグを折るには、読み込み権限のビットマスクの反転したものは101なので、以下のようにします。</p>
+
+<ul>
+<li>010 AND 101 = 000</li>
+<li>111 AND 101 = 101</li>
+<li>011 AND 101 = 001</li>
+</ul>
+
+
+<h2>フラグの確認</h2>
+
+<p>フラグの確認は論理積(AND)で確認できます。論理積の結果は２つのビットの共通部分です。例えば読み込み権限を確認する時は以下のようになります。</p>
+
+<ul>
+<li>011 AND 010 = 010 読み込み権限あり</li>
+<li>010 AND 010 = 010 読み込み権限あり</li>
+<li>100 AND 010 = 000 読み込み権限なし</li>
+</ul>
+
+
+<p>このように読み込み権限のbitmaskとの論理積を計算すると読み込み権限のビットがONかOFFかがわかります。実際のコードでは、bitmaskとの論理積の結果が0か0でないかの判定でフラグのON, OFFを確認できます</p>
+
+<h1>アプリでの利用</h1>
+
+<p>アプリで利用する際はSQLiteと一緒に使うとよいです。多くのフラグ管理をしなければいけないときでもテーブルをシンプルに設計することができます。またSQLiteはビット演算をサポートしているので、特定のフラグを持つカラムを高速に検索することもできます。</p>
+
+<p>例えばタスク管理アプリをつくるとします。タイトルと複数選択できる曜日がSQLiteに保存できる簡単なものです。サンプルなので多少ハードコーディングしてあります。</p>
+
+<pre class="brush: java; gutter: true">public class Task {
+    public interface DAY_OF_WEEK {
+        int MON = 1;
+        int TUE = 2;
+        int WED = 4;
+        int THU = 8;
+        int FRI = 16;
+        int SAT = 32;
+        int SUN = 64;
+    }
+
+    private String title;
+    private int day;
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public int getDay() {
+        return day;
+    }
+
+    public void setDay(int day) {
+        this.day |= day;
+    }
+
+    public void removeDay(int day) {
+        this.day &= ~day;
+    }
+
+}</pre>
+
+
+<p>Javaでのビット演算では&amp;で論理積、|で論理和、~で否定になります。例えば月曜と火曜に犬の散歩をするタスクの場合は以下のようになります。</p>
+
+<pre class="brush: java; gutter: true">Task task = new Task();
+task.setTitle("犬の散歩");
+task.setDay(DAY_OF_WEEK.MON);
+task.setDay(DAY_OF_WEEK.TUE);</pre>
+
+
+<p>月曜を削除するときは以下の通り</p>
+
+<pre class="brush: java; gutter: true">task.removeDay(DAY_OF_WEEK.MON);</pre>
+
+
+<p>SQLiteにinsert</p>
+
+<pre class="brush: actionscript3; gutter: true">ContentValues cv = new ContentValues();
+cv.put("title", task.getTitle());
+cv.put("day", task.getDay());
+db.insert("task", null, cv);</pre>
+
+
+<p>火曜日のタスクの検索は以下の通り</p>
+
+<pre class="brush: java; gutter: true">Cursor cursor = db.query("task", null, "day & 2 != 0", null, null, null, null);</pre>
+
+
+<p>以上のようにtaskのdayというカラムに月曜から日曜までの7種類のフラグの保存と検索ができるようになります。</p>
+
+<h2>OrmLiteでの利用</h2>
+
+<p>OrmLiteはraw SQLもかけるので以下のように検索できます。</p>
+
+<pre class="brush: actionscript3; gutter: true">Where&lt;Task, Long&gt; where = q.where().raw("day & " + DAY_OF_WEEK.TUE + " != 0");
+Log.d("SQL","sql: " + q.prepareStatementString());
+List&lt;Task&gt; tasks = where.query();</pre>
+
+
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Options Menuをハンドリングする &#8211; AndroidAnnotations -]]></title>
+    <link href="http://fly1tkg.github.io/2014/02/androidannotations-optionsmenu/"/>
+    <updated>2014-02-20T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/02/androidannotations-optionsmenu</id>
+    <content type="html"><![CDATA[<p>AndroidAnnotations(以下AA)を使うとシンプルにオプションメニューを実装することができます。</p>
+
+<ul>
+<li>@OptionMenuでメニューのリソースを指定します。</li>
+<li>@OptionItemでイベントを受け取るメソッドを指定します。</li>
+</ul>
+
+
+<!--more-->
+
+
+<p>サンプルコード</p>
+
+<pre class="brush: java; gutter: true">@EActivity
+@OptionsMenu(R.menu.my_menu)　// res/menu/my_menu.xmlを指定します
+public class MyActivity extends Activity {
+
+    @OptionMenuItem // MenuItemのインスタンスを取得したい場合はこう書きます。利用しない場合は不必要です
+    MenuItem menuSearch;
+
+    @OptionsItem(R.id.menuShare) 
+        void myMethod() {
+          // R.id.menuShareのメニューが選択されたときの処理を書きます。
+        }
+
+    @OptionsItem
+    void homeSelected() {
+　　　　　　// リソースIDが指定されていない場合はメソッド名から判定されます(Selectedは無視されます)
+          // R.id.homeのメニューが選択された時に実行されます
+    }
+
+    @OptionsItem
+    boolean menuSearch() {
+          menuSearch.setVisible(false);
+          // R.id.menuSearchが選択された時に実行されます
+          // 返り値はvoidとbooleanを選択できます(falseの場合はmenuの処理を継続できます)
+
+          return true;
+    }
+
+    @OptionsItem({ R.id.menu_search, R.id.menu_delete })
+    void multipleMenuItems() {
+      // 複数のリソースIDを指定できます
+    }
+
+    @OptionsItem
+    void menu_add(MenuItem item) {
+      // パラメータにMenuItemを指定し利用することもできます
+      // itemにはR.id.menu_addのMenuItemが入ります
+    }
+}</pre>
+
+
+<p>フラグメントでも利用することができます</p>
+
+<pre class="brush: java; gutter: true">@EFragment
+@OptionsMenu(R.menu.my_fragment_menu)
+public class MyFragment extends Fragment {
+
+    @OptionsItem
+    void menuRefreshSelected() {
+    }
+
+}</pre>
+
+
+<p>参考</p>
+
+<ul>
+<li><a href="https://github.com/excilys/androidannotations/wiki/Handling%20Options%20Menu">https://github.com/excilys/androidannotations/wiki/Handling%20Options%20Menu</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[バイクでGoPro3+のマウント比較してみた]]></title>
+    <link href="http://fly1tkg.github.io/2014/01/gopro3plus-mount/"/>
+    <updated>2014-01-11T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/01/gopro3plus-mount</id>
+    <content type="html"><![CDATA[<p>最近、開発目的でGoPro3+ BlackEditionを購入したのですが、久々のガジェット購入でテンションあがりました。</p>
+
+<div style="display: inline-block; _display: inline;"><iframe style="width: 120px; height: 240px;" src="http://rcm-fe.amazon-adsystem.com/e/cm?t=fly1tkg-22&amp;o=9&amp;p=8&amp;l=as1&amp;asins=B00GOKOT0C&amp;ref=qf_sp_asin_til&amp;fc1=000000&amp;IS2=1&amp;lt1=_blank&amp;m=amazon&amp;lc1=0000FF&amp;bc1=000000&amp;bg1=FFFFFF&amp;f=ifr" width="320" height="240" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe></div>
+
+
+<div style="display: inline-block; _display: inline;"><iframe style="width: 120px; height: 240px;" src="http://rcm-fe.amazon-adsystem.com/e/cm?t=fly1tkg-22&amp;o=9&amp;p=8&amp;l=as1&amp;asins=B0081EAK34&amp;ref=qf_sp_asin_til&amp;fc1=000000&amp;IS2=1&amp;lt1=_blank&amp;m=amazon&amp;lc1=0000FF&amp;bc1=000000&amp;bg1=FFFFFF&amp;f=ifr" width="320" height="240" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe></div>
+
+
+<p>3つのマウントでバイクの車載動画をとって比較してみました。</p>
+
+<ul>
+<li>ヘルメットマウント(<a href="http://dic.nicovideo.jp/a/%E6%AE%BF%E6%A7%98%E3%82%A6%E3%83%B3%E3%83%88">殿様ウント</a>)</li>
+<li>チェストマウント</li>
+<li>ハンドルマウント</li>
+</ul>
+
+
+<!--more-->
+
+
+<h1>ヘルメットマウント(<a href="http://dic.nicovideo.jp/a/%E6%AE%BF%E6%A7%98%E3%82%A6%E3%83%B3%E3%83%88">殿様ウント</a>)</h1>
+
+<p>ヘルメットマウントは接着式カーブマウントをヘルメットに接着して、撮影しています。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2014/01/DSC_0119.jpg"></p>
+
+<iframe src="//www.youtube.com/embed/tM2cJLsNTY4" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
+
+
+<p><strong>メリット</strong></p>
+
+<ul>
+<li>一番高い視点から撮影できる。</li>
+</ul>
+
+
+<p><strong>デメリット</strong></p>
+
+<ul>
+<li>風切り音が強い</li>
+<li>視線移動で画角がかわってしまう</li>
+</ul>
+
+
+<p><strong>その他</strong></p>
+
+<ul>
+<li>周りの人の視線が痛い。一番注目を浴びる</li>
+</ul>
+
+
+<iframe style="width: 120px; height: 240px;" src="http://rcm-fe.amazon-adsystem.com/e/cm?t=fly1tkg-22&amp;o=9&amp;p=8&amp;l=as1&amp;asins=B00GTFNH1O&amp;ref=qf_sp_asin_til&amp;fc1=000000&amp;IS2=1&amp;lt1=_blank&amp;m=amazon&amp;lc1=0000FF&amp;bc1=000000&amp;bg1=FFFFFF&amp;f=ifr" width="320" height="240" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+
+
+<h1>ハンドルマウント</h1>
+
+<p>GoPro用のハンドルマウントを使用して撮影しました。</p>
+
+<p><img src="http://fly1tkg.github.io/images/2014/01/DSC_0122.jpg"></p>
+
+<iframe src="//www.youtube.com/embed/qcdvoCg_sag" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
+
+
+<p><strong>メリット</strong></p>
+
+<ul>
+<li>固定されているので画角も固定</li>
+<li>エンジン音が一番しっかり収録できていた</li>
+<li>風切り音もヘルメットマウントほどではない</li>
+</ul>
+
+
+<p><strong>デメリット</strong></p>
+
+<ul>
+<li>車体と接続しているので、振動が強く、ぶれが若干発生</li>
+</ul>
+
+
+<p><strong>その他</strong></p>
+
+<ul>
+<li>しっかりとビスを閉めないと振動で向きがかわってしまう</li>
+</ul>
+
+
+<iframe style="width: 120px; height: 240px;" src="http://rcm-fe.amazon-adsystem.com/e/cm?t=fly1tkg-22&amp;o=9&amp;p=8&amp;l=as1&amp;asins=B006WHC4YA&amp;ref=qf_sp_asin_til&amp;fc1=000000&amp;IS2=1&amp;lt1=_blank&amp;m=amazon&amp;lc1=0000FF&amp;bc1=000000&amp;bg1=FFFFFF&amp;f=ifr" width="320" height="240" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+
+
+<h1>チェストマウント</h1>
+
+<p><img src="http://fly1tkg.github.io/images/2014/01/DSC_0123.jpg"></p>
+
+<iframe src="//www.youtube.com/embed/uNevD5CIslo" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
+
+
+<p><strong>メリット</strong></p>
+
+<ul>
+<li>ハンドルや自分の腕を画角におさめることができる</li>
+<li>風切り音も少ない</li>
+<li>ぶれが少ない</li>
+<li>コンビニとかに入るときにGoPro外す作業しなくてもそのままもって入れる</li>
+</ul>
+
+
+<p><strong>デメリット</strong></p>
+
+<ul>
+<li>エンジン音がちいさい</li>
+<li>バイクによってはうまく撮影できなさそう(アメリカンやスポーツバイクは胸がまっすぐ向いていないなど)</li>
+</ul>
+
+
+<iframe style="width: 120px; height: 240px;" src="http://rcm-fe.amazon-adsystem.com/e/cm?t=fly1tkg-22&amp;o=9&amp;p=8&amp;l=as1&amp;asins=B003EIKAEG&amp;ref=qf_sp_asin_til&amp;fc1=000000&amp;IS2=1&amp;lt1=_blank&amp;m=amazon&amp;lc1=0000FF&amp;bc1=000000&amp;bg1=FFFFFF&amp;f=ifr" width="320" height="240" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+
+
+<h1>まとめ</h1>
+
+<p>ハンドルマウントがどのバイクでも無難に撮影できそうでした。チェストマウントはバイクを選びますが、個人的には一番好きな絵がとれました。ヘルメットマウントは高い視点で撮影できますが、後で風切り音を緩和させるのが大変そうです。（ノイズを減らすカバーを使うと今回ほどではなくなるかもしれません）</p>
+
+<h1>備考</h1>
+
+<h2>低すぎたハンドルマウント</h2>
+
+<p><img src="http://fly1tkg.github.io/images/2014/01/DSC_0121.jpg"></p>
+
+<iframe src="//www.youtube.com/embed/AlNP1t0-8pw" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
+
+
+<h2>雨天時の撮影</h2>
+
+<iframe src="//www.youtube.com/embed/aeOmq7xBp1I" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
+
+
+
+
+<!-- blog_widget -->
+
+
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[書いたコードはどんどんBitbucketのプライベートリポジトリにpushする]]></title>
+    <link href="http://fly1tkg.github.io/2013/12/bitbucket-private/"/>
+    <updated>2013-12-30T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2013/12/bitbucket-private</id>
+    <content type="html"><![CDATA[<p>ちょっと試しで書いたコードとかは皆さんどうしていますか？</p>
+
+<p>僕はBitbucketのプライベートリポジトリにどんどん貯めるようにしています。</p>
+
+<p>実験的にコードを書いているとディスクの容量を食っていくので、ちょくちょく消すのですが、いざ昔書いたコードを使いたいって時に便利だからです。</p>
+
+<p>bitbucketのプライベートリポジトリなら無料だし、パブリックリポジトリとは違って、よくかんがえなくっても何かのキーとかパスワードとかを大公開してしまうことはないので気軽です。実験的なコードに限ってキーとかハードコートしてますし。</p>
+
+<p>気軽にプライベートリポジトリにpushするために、クライアントツールで作れる準備をしておくのも便利です。もちろん、いちいちbitbucketのサイトを開いて作ってもそんなに手間ではないですが。</p>
+
+<!--more-->
+
+
+<h1>コマンドラインからBitbucketのプライベートリポジトリを作成する</h1>
+
+<p>Bitbucketのプライベートリポジトリを作成するのに、Rest APIを利用することができます。.bachrcや.zshrcに以下のような記述をすると便利です。</p>
+
+<pre class="brush: bash; gutter: true">function prepo() { curl -X POST -u BitBucketの登録メールアドレス:パスワード -H "Content-Type: application/json" https://api.bitbucket.org/2.0/repositories/Bitbucketのユーザー名/$@ -d &#039;{"scm":"git", "is_private": true}&#039; };</pre>
+
+
+<p>これで</p>
+
+<pre class="brush: bash; gutter: true">prepo test-repo</pre>
+
+
+<p>のコマンドでtest-repoというリポジトリが作成されます</p>
+
+<h1>.gitignoreを生成する</h1>
+
+<p>gitignoreはgitignore.ioというサイトでRest APIが準備されており、一般的なものを取得することができます。</p>
+
+<p>まず以下を.bash_profileや.zshrcに記述します</p>
+
+<pre class="brush: bash; gutter: true">function gi() { curl http://gitignore.io/api/$@ ;}</pre>
+
+
+<p>例えばAndroidの.gitignoreのファイルを生成するには</p>
+
+<pre class="brush: bash; gutter: true">gi android &gt;&gt; .gitignore</pre>
+
+
+<p>でできます。</p>
+
+<h1>プライベートリポジトリへpushする</h1>
+
+<pre class="brush: bash; gutter: true">git remote add origin git@bitbucket.org:Bitbucketのユーザー名/リポジトリ名
+git push -u origin master</pre>
+
+
+<p>これでpushできます</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[PCが壊れたときの為に導入しておくべきサービスやソフトとか]]></title>
+    <link href="http://fly1tkg.github.io/2013/12/service-software/"/>
+    <updated>2013-12-21T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2013/12/service-software</id>
+    <content type="html"><![CDATA[<p>先日、Macbook Airが壊れました。修理に出す際、業務で使用しているPCなのでSSDの中身を全消去してから出しました。</p>
+
+<p>PCが壊れることは割とよくあるので、壊れたときに仕事が遅れないように常にバックアップをかけておくことが重要だと思います。その際に便利なソフトやサービスを紹介していきます。といっても有名どころなんですけどね、やっぱりここら辺はよくできていると思います。</p>
+
+<!--more-->
+
+
+<h1>Dropbox</h1>
+
+<p><a href="https://db.tt/Jk7Sa0AA" target="_blank">Dropbox</a></p>
+
+<p>Dropboxは非常にパワフルなバックアップ方法です。仕事で使うファイルなどをDropboxのフォルダに保存しておくだけで、もうデータをなくすことはなくなります。客にメールで大きなファイルを送るときに、ファイル転送サービスとかにいちいち登録しなくても、共有のURLを右クリックから作成することも可能です。無料でも十分ですが、年間9.99ドルで100GBにしておけば、写真や動画、音楽なんかのバックアップも完璧。僕はiPhotoのライブラリとiTunesのライブラリの保存先をDropboxにしています。僕は100GBのプランで使用しています。</p>
+
+<h1>Evernote</h1>
+
+<p><a href="https://www.evernote.com/referral/Registration.action?uid=57676224&sig=8d6fddda2cb4782d488ca70fe733f4da" target="_blank">Evernote</a></p>
+
+<p>Evernoteはメモや議事録をとるのに重宝します。自動でクラウドに保存してくれます。スマホアプリ版のドキュメントカメラはかなり強力で、書類を撮影すると、よけいな背景を取り除いて読みやすい画像でノートに保存してくれます。これはプライベートでも利用していてレシートを撮影していって月にいくら使ったかとかの簡易的な集計にも使っています。僕はプレミアムアカウントで利用しています。(月500円)</p>
+
+<h1>Google calendar</h1>
+
+<p><a href="https://www.google.com/calendar/" target="_blank">Google calendar</a></p>
+
+<p>グーグルカレンダーはスケジュール管理に非常に便利です。これを使いこなしてからは紙の手帳を持たなくなりました。僕は基本的にPCで入力してスマホでみるという使い方が多いです。PCもスマホもWeb以外にいろいろなアプリが対応しているので、好みで選択すればいいと思います。僕はPCはmac標準のカレンダー、iPhoneは標準のカレンダー、Androidはプリインストールされてたスケジュールアプリ使ってます。Google calendarは無料で利用できます。</p>
+
+<h1>Gmail</h1>
+
+<p><a href="http://mail.google.com" target="_blank">Gmail</a></p>
+
+<p>GmailのメリットとしてIMAPでアクセスできるので、端末間で未読、既読の共有ができる点です。暇なときとかにスマホでさくさくメールチェックできてとても楽です。</p>
+
+<p>Gmailは@gmail.comのメールだけじゃなくって、ほかのメールも設定できます。メールの受信はPOPで取得すると遅いので、メールサーバから直接@gmail.com宛に転送設定しておくのがベストです、送信はSMTPを設定すればOK、PCではWebで、iPhoneではMailBoxというアプリで、AndroidではGmailアプリで利用しています。利用は無料です。</p>
+
+<h1>github</h1>
+
+<p><a href="https://github.com/" target="_blank">github</a></p>
+
+<p>仕事のソースコードとかはここのプライベートリポジトリでバックアップしています。ほかにも、ドットファイルとかもここにバックアップしています。</p>
+
+<h1>bitbucket</h1>
+
+<p><a href="https://bitbucket.org/" target="_blank">bitbucket</a></p>
+
+<p>プライベートでつくるアプリとか、実験的なコードとかはここにバックアップしています。どんだけつかってもタダなので。たとえ1GBでも2GBでも、、、</p>
+
+<h1>まとめ</h1>
+
+<p>特にDropboxは強力なので、月に1000円くらい払っても、全然損にならないと思います。</p>
+]]></content>
+  </entry>
+  
+</feed>

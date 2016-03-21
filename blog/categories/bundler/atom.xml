@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Bundler | fly1tkg blog]]></title>
+  <link href="http://fly1tkg.github.io/blog/categories/bundler/atom.xml" rel="self"/>
+  <link href="http://fly1tkg.github.io/"/>
+  <updated>2016-03-21T08:26:49+00:00</updated>
+  <id>http://fly1tkg.github.io/</id>
+  <author>
+    <name><![CDATA[Shoichi Takagi]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[自作gemをS3でホスティングして利用する]]></title>
+    <link href="http://fly1tkg.github.io/2014/09/s3-gem/"/>
+    <updated>2014-09-15T15:02:29+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/09/s3-gem</id>
+    <content type="html"><![CDATA[<h2>Gemを作る</h2>
+
+<p>bundlerがインストールされた状態で</p>
+
+<p><code>
+bundle gem fuga
+</code></p>
+
+<p>適当に実装を追加したら</p>
+
+<p><code>
+rake build
+</code></p>
+
+<p>で、pkg/fuga-0.0.1.gemというものができます。</p>
+
+<!--more-->
+
+
+<h2>S3に配置するファイルを作成する</h2>
+
+<p>まず作業ディレクトリを作ります</p>
+
+<p><code>
+mkdir public
+cd public
+</code></p>
+
+<p>gemsというフォルダを作ってその中にさきほど生成したfuga-0.0.1.gemを配置します</p>
+
+<p><code>
+mkdir gems
+cp fuga-0.0.1.gem gems/
+</code></p>
+
+<p>カレントディレクトリがpublicの状態で</p>
+
+<p><code>
+gem generate_index
+</code></p>
+
+<p>を実行すると必要なファイルが生成されます。</p>
+
+<p><code>
+.
+├── gems
+│   └── fuga-0.0.1.gem
+├── latest_specs.4.8
+├── latest_specs.4.8.gz
+├── prerelease_specs.4.8
+├── prerelease_specs.4.8.gz
+├── quick
+│   └── Marshal.4.8
+│       └── fuga-0.0.1.gemspec.rz
+├── specs.4.8
+└── specs.4.8.gz
+</code></p>
+
+<p>CreateボタンをクリックしてBucketを作成する</p>
+
+<h2>S3のbucketにファイルを配置する</h2>
+
+<p>publicフォルダ以下のファイルすべてのファイルをS3のbucketに保存して、aclをpublic_readにする。</p>
+
+<h2>実際に取得できるか確認する</h2>
+
+<p><code>
+gem source 'https://s3-ap-northeast-1.amazonaws.com/&lt;bucket-name&gt;/'
+gem search fuga -r
+</code></p>
+
+<p>を実行して、fugaが見つかればOK</p>
+
+<h2>Gemfileで利用する</h2>
+
+<p>```ruby</p>
+
+<h1>Gemfile</h1>
+
+<p>source &lsquo;<a href="https://rubygems.org">https://rubygems.org</a>&rsquo;
+source &lsquo;<a href="https://s3-ap-northeast-1.amazonaws.com/">https://s3-ap-northeast-1.amazonaws.com/</a>&lt;bucket-name>/&rsquo;</p>
+
+<p>gem hoge
+```</p>
+
+<h2>参考</h2>
+
+<p><a href="http://d.hatena.ne.jp/ux00ff/20121207/1354898619">http://d.hatena.ne.jp/ux00ff/20121207/1354898619</a></p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>fly1tkg blog</title>
+  <title>Androidアプリ開発者向けBitmask入門 - fly1tkg blog</title>
   <meta name="author" content="Shoichi Takagi">
 
   
-  <meta name="description" content="はじめに 最近のAndroidアプリ開発ではClean Architectureなど、設計の議論がすすみ、テストコードのためのツール群も増えたことで、テストコードを書くコストが減ってきているように感じます。 また、もう一つの流行としてRxJavaの採用事例が増えてきたように感じます。 &hellip;">
+  <meta name="description" content="ビットマスク(Bitmask)とは ビット演算の一つでいわゆるフラグ管理に利用されています。回路の仕組み上ビットマスクなどのビット演算はとても高速に処理できます。 ビットマスクはたとえばLinuxといったOSのファイルのアクセス権の管理に利用されています。ファイルの実行、読み込み、 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://fly1tkg.github.io">
+  <link rel="canonical" href="http://fly1tkg.github.io/2014/03/android-bitmask">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="fly1tkg blog" type="application/atom+xml">
@@ -113,15 +113,14 @@
 </nav>
   <div id="main">
     <div id="content">
-      <div class="blog-index">
+      <div>
+<article class="hentry" role="article">
   
-  
-  
-    <article>
-      
   <header>
     
-      <h1 class="entry-title"><a href="/2016/03/rxjava-test/">RxJavaのテストコードを書く</a></h1>
+      
+        <h1 class="entry-title">Androidアプリ開発者向けBitmask入門</h1>
+      
     
     
       <p class="meta">
@@ -138,426 +137,229 @@
   </header>
 
 
-  <div class="entry-content"><h2>はじめに</h2>
+<div class="entry-content"><h1>ビットマスク(Bitmask)とは</h1>
 
-<p>最近のAndroidアプリ開発では<strong>Clean Architecture</strong>など、設計の議論がすすみ、テストコードのためのツール群も増えたことで、テストコードを書くコストが減ってきているように感じます。</p>
+<p>ビット演算の一つでいわゆるフラグ管理に利用されています。回路の仕組み上ビットマスクなどのビット演算はとても高速に処理できます。</p>
 
-<p>また、もう一つの流行としてRxJavaの採用事例が増えてきたように感じます。</p>
-
-<p>JavaのJUnitテストやAndroidのテストにおいて、RxJavaのテストコードをどのように書くべきか、調べたことを書いていきたいと思います。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/2016/03/rxjava-test/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/2016/02/integrate-google-apps-zendesk/">ZendeskでGoogle Apps管理ドメインのメールアドレスを送受信する</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-        
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>この記事はGoogle Appsで管理しているメールアドレスをZendeskで使えるようにする設定のメモ書きです。</p>
-
-<h2>Zendeskでメールを受け取る</h2>
-
-<h3>管理コンソールから アプリ > Google Apps > Gmailを選択します</h3>
-
-<p><img src="/images/2016/02/integrate-google-apps-zendesk/0.png"></p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/2016/02/integrate-google-apps-zendesk/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/2016/02/shellcheck/">ShellCheckでshellscriptの静的チェックをする</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-        
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近Rubocopでrubyコードの静的チェックをCIでしているのですが、シェルスクリプトについても同様にできないかと探してみると、ShellCheckというものを見つけました。</p>
-
-<h2>ShellCheckとは</h2>
-
-<p>シェルスクリプトを静的チェックして、より良い書き方を提案してくれます。</p>
-
-<p><a href="https://github.com/koalaman/shellcheck">https://github.com/koalaman/shellcheck</a></p>
-
-<blockquote><p><img src="https://raw.githubusercontent.com/koalaman/shellcheck/master/doc/terminal.png"></p>
-
-<p>reference: <a href="https://github.com/koalaman/shellcheck">https://github.com/koalaman/shellcheck</a></p></blockquote>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/2016/02/shellcheck/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/2015/05/klia2-hotel/">KLIA2にはカプセルホテルがある</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-        
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img src="/images/2015/05/klia2-hotel/1.jpg"></p>
-
-<p>シャワーのみはMR20（ミネラルウォーターつき）なので、空港泊の人は利用してもいいかも</p>
-
-<p>場所はKLIA2の1階の端っこにある</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/2015/05/klia-to-malacca-bus/">クアラルンプール国際空港からマラッカへバスで行く方法</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-        
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>空港からマラッカセントラル駅(Melaca Sentral)へ移動する</h2>
-
-<p>価格: MR25程度
-時間: 2時間程度</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/2015/05/klia-to-malacca-bus/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/2015/05/taoyuan-to-taipei/">桃園国際空港から台北駅(台北車站)へバスで行く方法</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-        
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>桃園国際空港から台北市内までの移動はバスを利用すると安くてお得です。</p>
-
-<p>この記事では桃園国際空港から出発するバスについて説明します。</p>
+<p>ビットマスクはたとえばLinuxといったOSのファイルのアクセス権の管理に利用されています。ファイルの実行、読み込み、書き込みの権限は3bitで表現されます。(括弧内は10進数) 1桁目は実行権限、2桁目は読み込み権限、3桁目は書き込み権限を表しています。</p>
 
 <ul>
-<li>バス名: 國光客運1819系統</li>
-<li>料金: NT$125</li>
-<li>出発時刻: 04:00~24:20 10~15分間隔</li>
-<li>到着時間: 1時間ほど</li>
-<li>公式サイト: <a href="http://www.kingbus.com.tw/ticketPriceResult.php?sid=99">http://www.kingbus.com.tw/ticketPriceResult.php?sid=99</a></li>
+<li>000 (0) アクセス権がない</li>
+<li>001 (1) 実行権限</li>
+<li>010 (2) 読み込み権限</li>
+<li>100 (4) 書き込み権限</li>
+<li>011 (3) 読み込み+実行</li>
+<li>111 (7) 書き込み+読み込み+実行</li>
 </ul>
 
 
-<p>台北駅(台北車站)から桃園国際空港へバスで行く方法はこちら</p>
-
-<p><a href="http://fly1tkg.github.io/2015/05/taipei-to-taoyuan/">http://fly1tkg.github.io/2015/05/taipei-to-taoyuan/</a></p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/2015/05/taoyuan-to-taipei/">Read on &rarr;</a>
-    </footer>
-  
+<!--more-->
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/2015/05/taipei-to-taoyuan/">台北駅(台北車站)から桃園国際空港へバスで行く方法</a></h1>
-    
-    
-      <p class="meta">
-        
+<h2>フラグをONにする</h2>
 
-
-
-
-
-        
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>台北市内から桃園国際空港までの移動はバスを利用すると安くてお得です。</p>
-
-<p>この記事では台北駅(台北車站)から出発するバスについて説明します。</p>
+<p>フラグをONにするときはビットマスクとの論理和(OR)で行えます。例えば読み込み権限のフラグをたてるには以下のようにします。</p>
 
 <ul>
-<li>バス名: 國光客運1819系統</li>
-<li>料金: NT$125</li>
-<li>出発時刻: 04:00~24:20 10~15分間隔</li>
-<li>到着時間: 1時間ほど</li>
-<li>公式サイト: <a href="http://www.kingbus.com.tw/ticketPriceResult.php?sid=99">http://www.kingbus.com.tw/ticketPriceResult.php?sid=99</a></li>
+<li>000 OR 010 = 010</li>
+<li>101 OR 010 = 111</li>
 </ul>
 
 
-<p>桃園国際空港から台北駅(台北車站)へバスで行く方法はこちら
-<a href="http://fly1tkg.github.io/2015/05/taoyuan-to-taipei/">http://fly1tkg.github.io/2015/05/taoyuan-to-taipei/</a></p>
+<h2>フラグをOFFにする</h2>
+
+<p>フラグをOFFにするときはビットマスクを反転したものとの論理積(AND)で行えます。例えば読み込み権限のフラグを折るには、読み込み権限のビットマスクの反転したものは101なので、以下のようにします。</p>
+
+<ul>
+<li>010 AND 101 = 000</li>
+<li>111 AND 101 = 101</li>
+<li>011 AND 101 = 001</li>
+</ul>
+
+
+<h2>フラグの確認</h2>
+
+<p>フラグの確認は論理積(AND)で確認できます。論理積の結果は２つのビットの共通部分です。例えば読み込み権限を確認する時は以下のようになります。</p>
+
+<ul>
+<li>011 AND 010 = 010 読み込み権限あり</li>
+<li>010 AND 010 = 010 読み込み権限あり</li>
+<li>100 AND 010 = 000 読み込み権限なし</li>
+</ul>
+
+
+<p>このように読み込み権限のbitmaskとの論理積を計算すると読み込み権限のビットがONかOFFかがわかります。実際のコードでは、bitmaskとの論理積の結果が0か0でないかの判定でフラグのON, OFFを確認できます</p>
+
+<h1>アプリでの利用</h1>
+
+<p>アプリで利用する際はSQLiteと一緒に使うとよいです。多くのフラグ管理をしなければいけないときでもテーブルをシンプルに設計することができます。またSQLiteはビット演算をサポートしているので、特定のフラグを持つカラムを高速に検索することもできます。</p>
+
+<p>例えばタスク管理アプリをつくるとします。タイトルと複数選択できる曜日がSQLiteに保存できる簡単なものです。サンプルなので多少ハードコーディングしてあります。</p>
+
+<pre class="brush: java; gutter: true">public class Task {
+    public interface DAY_OF_WEEK {
+        int MON = 1;
+        int TUE = 2;
+        int WED = 4;
+        int THU = 8;
+        int FRI = 16;
+        int SAT = 32;
+        int SUN = 64;
+    }
+
+    private String title;
+    private int day;
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public int getDay() {
+        return day;
+    }
+
+    public void setDay(int day) {
+        this.day |= day;
+    }
+
+    public void removeDay(int day) {
+        this.day &= ~day;
+    }
+
+}</pre>
+
+
+<p>Javaでのビット演算では&amp;で論理積、|で論理和、~で否定になります。例えば月曜と火曜に犬の散歩をするタスクの場合は以下のようになります。</p>
+
+<pre class="brush: java; gutter: true">Task task = new Task();
+task.setTitle("犬の散歩");
+task.setDay(DAY_OF_WEEK.MON);
+task.setDay(DAY_OF_WEEK.TUE);</pre>
+
+
+<p>月曜を削除するときは以下の通り</p>
+
+<pre class="brush: java; gutter: true">task.removeDay(DAY_OF_WEEK.MON);</pre>
+
+
+<p>SQLiteにinsert</p>
+
+<pre class="brush: actionscript3; gutter: true">ContentValues cv = new ContentValues();
+cv.put("title", task.getTitle());
+cv.put("day", task.getDay());
+db.insert("task", null, cv);</pre>
+
+
+<p>火曜日のタスクの検索は以下の通り</p>
+
+<pre class="brush: java; gutter: true">Cursor cursor = db.query("task", null, "day & 2 != 0", null, null, null, null);</pre>
+
+
+<p>以上のようにtaskのdayというカラムに月曜から日曜までの7種類のフラグの保存と検索ができるようになります。</p>
+
+<h2>OrmLiteでの利用</h2>
+
+<p>OrmLiteはraw SQLもかけるので以下のように検索できます。</p>
+
+<pre class="brush: actionscript3; gutter: true">Where&lt;Task, Long&gt; where = q.where().raw("day & " + DAY_OF_WEEK.TUE + " != 0");
+Log.d("SQL","sql: " + q.prepareStatementString());
+List&lt;Task&gt; tasks = where.query();</pre>
+
+
 
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/2015/05/taipei-to-taoyuan/">Read on &rarr;</a>
-    </footer>
-  
 
 
-    </article>
-  
-  
-    <article>
+  <footer>
+    <p class="meta">
       
-  <header>
-    
-      <h1 class="entry-title"><a href="/2014/09/s3-gem/">自作gemをS3でホスティングして利用する</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-        
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>Gemを作る</h2>
-
-<p>bundlerがインストールされた状態で</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>bundle gem fuga</span></code></pre></td></tr></table></div></figure>
-
-
-<p>適当に実装を追加したら</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>rake build</span></code></pre></td></tr></table></div></figure>
-
-
-<p>で、pkg/fuga-0.0.1.gemというものができます。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/2014/09/s3-gem/">Read on &rarr;</a>
-    </footer>
   
 
 
-    </article>
   
+
+
+  <span class="byline author vcard">Authored by <span class="fn">
   
-    <article>
+    <a href="https://plus.google.com/+shoichitakagi" rel="author">fly1tkg</a>
+  
+  </span></span>
+
+
       
-  <header>
-    
-      <h1 class="entry-title"><a href="/2014/07/mockito-work-android-18/">mockitoをAndroid4.3以上で動かす</a></h1>
-    
-    
-      <p class="meta">
-        
 
 
 
 
 
-        
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>mockitoがAndroid4.3以上で動かない。以下のようなエラーメッセージが出ます。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>java.lang.IllegalArgumentException: dexcache == null (and no default could be found; consider setting the 'dexmaker.dexcache' system property)
-</span><span class='line'>at com.google.dexmaker.DexMaker.generateAndLoad(DexMaker.java:359)</span></code></pre></td></tr></table></div></figure>
-
-
-<p>dexmakerのAndroid4.3以上のバグのようなので(issueにあって対処法も書いてあるのにメンテされてないのかなあ）以下のようにすると利用できるようになります。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/2014/07/mockito-work-android-18/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
       
-  <header>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/android/'>android</a>
+  
+</span>
+
+
+    </p>
     
-      <h1 class="entry-title"><a href="/2014/07/android-emu-sdcard/">werckerのAndroidエミュレータでSDカードを使う</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-        
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>werckerには公式のStepでAndroidのエミュレータをセットアップするすることができます</p>
-
-<p><a href="https://app.wercker.com/#applications/5241920d4f6b6b786f000586/tab/details">https://app.wercker.com/#applications/5241920d4f6b6b786f000586/tab/details</a></p>
-
-<p>しかし、このStepだとSDカードがマウントされていないため、SDカードを利用するユニットテストができません。</p>
-
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://fly1tkg.github.io/2014/03/android-bitmask/" data-via="fly1tkg" data-counturl="http://fly1tkg.github.io/2014/03/android-bitmask/" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+    <div class="fb-like" data-layout="button_count" data-send="false" data-width="300" data-show-faces="false"></div>
+  
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/2014/07/android-emu-sdcard/">Read on &rarr;</a>
-    </footer>
-  
 
-
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/2014/02/androidannotations-optionsmenu/" title="Previous Post: Options menuをハンドリングする &#8211; AndroidAnnotations -">&laquo; Options menuをハンドリングする &#8211; AndroidAnnotations -</a>
+      
+      
+        <a class="basic-alignment right" href="/2014/03/volley-multipart-form-data/" title="Next Post: Volleyでmultipart/form-dataを送信する">Volleyでmultipart/form-dataを送信する &raquo;</a>
+      
+    </p>
+    <table>
+      <tr>
+        <td>
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- blog_widget -->
+<ins class="adsbygoogle"
+     style="display:inline-block;width:300px;height:250px"
+     data-ad-client="ca-pub-6228702140385127"
+     data-ad-slot="3243171800"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+        </td>
+        <td>
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- blog_widget -->
+<ins class="adsbygoogle"
+     style="display:inline-block;width:300px;height:250px"
+     data-ad-client="ca-pub-6228702140385127"
+     data-ad-slot="3243171800"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+        </td>
+      </tr>
+    </table>
+      </footer>
     </article>
-  
-  <div class="pagination">
-    
-      <a class="prev" href="/posts/2">&larr; Older</a>
-    
-    <a href="/blog/archives">Blog Archives</a>
-    
-  </div>
+
+
 </div>
-<aside class="sidebar">
-  
-    
-  
-</aside>
 
     </div>
   </div>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Shellscript | fly1tkg blog]]></title>
+  <link href="http://fly1tkg.github.io/blog/categories/shellscript/atom.xml" rel="self"/>
+  <link href="http://fly1tkg.github.io/"/>
+  <updated>2016-03-21T08:26:49+00:00</updated>
+  <id>http://fly1tkg.github.io/</id>
+  <author>
+    <name><![CDATA[Shoichi Takagi]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[ShellCheckでshellscriptの静的チェックをする]]></title>
+    <link href="http://fly1tkg.github.io/2016/02/shellcheck/"/>
+    <updated>2016-02-06T07:06:05+00:00</updated>
+    <id>http://fly1tkg.github.io/2016/02/shellcheck</id>
+    <content type="html"><![CDATA[<p>最近Rubocopでrubyコードの静的チェックをCIでしているのですが、シェルスクリプトについても同様にできないかと探してみると、ShellCheckというものを見つけました。</p>
+
+<h2>ShellCheckとは</h2>
+
+<p>シェルスクリプトを静的チェックして、より良い書き方を提案してくれます。</p>
+
+<p><a href="https://github.com/koalaman/shellcheck">https://github.com/koalaman/shellcheck</a></p>
+
+<blockquote><p><img class="<a" src="href="https://raw.githubusercontent.com/koalaman/shellcheck/master/doc/terminal.png">https://raw.githubusercontent.com/koalaman/shellcheck/master/doc/terminal.png</a>"></p>
+
+<p>reference: <a href="https://github.com/koalaman/shellcheck">https://github.com/koalaman/shellcheck</a></p></blockquote>
+
+<!--more-->
+
+
+<p>Webからも簡単に試せます。 <a href="http://www.shellcheck.net/">http://www.shellcheck.net/</a></p>
+
+<p>コマンドラインのインストールは各種パッケージマネージャーが対応しているので簡単にできます。</p>
+
+<p><a href="https://github.com/koalaman/shellcheck#installing">https://github.com/koalaman/shellcheck#installing</a></p>
+
+<h2>ShellCheckをWerckerで使う</h2>
+
+<p>gitにpushしたコードをCIサービスでチェックしたいので、Werckerで試してみます。</p>
+
+<p>既にShellCheckを実行するStepが公開されているので、<strong>wercker.yml</strong>に組み込むだけです。</p>
+
+<p><a href="https://github.com/wercker/step-shellcheck">https://github.com/wercker/step-shellcheck</a></p>
+
+<p><strong>files</strong>の部分にチェックしたいコードを指定します。
+指定しない場合は<strong>*.sh</strong>が入ります</p>
+
+<p>```yml
+build:
+  steps:</p>
+
+<pre><code>- shellcheck:
+    files: run.sh
+</code></pre>
+
+<p>```</p>
+
+<h2>おわりに</h2>
+
+<p>僕はあまりシェルスクリプトを本格的に書いたことがありませんが、こういった静的チェックが先生になって添削してくれることでよりシェルスクリプトを理解できるようになりました。</p>
+
+<p>シェルスクリプト以外にもCIで静的チェックをするのはとても良いと思いました。</p>
+]]></content>
+  </entry>
+  
+</feed>

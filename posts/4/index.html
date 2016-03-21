@@ -1,0 +1,1596 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>fly1tkg blog</title>
+  <meta name="author" content="Shoichi Takagi">
+
+  
+  <meta name="description" content="JavaでXMLをParseするライブラリの一つにSimpleというものがあります。こいつはAndroidにも使えるので紹介します。 Simpleとは POJOなオブジェクトに特定のannotationをつけると、そのオブジェクトとXMLを簡単に相互変換出来るようになる。すごくいいやつ。 http &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://fly1tkg.github.io/posts/4">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="fly1tkg blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=Fjalla+One" rel="stylesheet" type="text/css">
+<!--- MathJax Configuration -->
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-43967830-1', 'auto');
+    ga('send', 'pageview');
+
+  </script>
+
+
+
+</head>
+
+<body   class="collapse-sidebar sidebar-footer" >
+  <header role="banner"><hgroup>
+  <h1><a href="/">fly1tkg blog</a></h1>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscribe" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS" target="_blank"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25" height="25" viewbox="0 0 100 100"><path class="social" d="M 13.310204,73.332654 C 5.967347,73.332654 0,79.322448 0,86.621428 c 0,7.338776 5.967347,13.262246 13.310204,13.262246 7.370408,0 13.328572,-5.92245 13.328572,-13.262246 0,-7.29898 -5.958164,-13.288774 -13.328572,-13.288774 z M 0.01530612,33.978572 V 53.143878 C 12.493878,53.143878 24.229592,58.02347 33.068368,66.865306 41.894898,75.685714 46.767346,87.47449 46.767346,100 h 19.25 C 66.017346,63.592858 36.4,33.979592 0.01530612,33.978572 l 0,0 z M 0.03877552,0 V 19.17449 C 44.54796,19.17551 80.77551,55.437756 80.77551,100 H 100 C 100,44.87653 55.15102,0 0.03877552,0 z"></path></svg></a></li>
+  
+</ul>
+  
+  
+  
+  
+  
+<ul class="subscribe">
+  <li><a href="https://github.com/fly1tkg" rel="subscribe-github" title="@fly1tkg on GitHub" target="_blank"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25" height="25" viewbox="0 0 100 100"><path class="social" d="M 50,0 C 22.385714,0 0,22.385714 0,50 0,77.614286 22.385714,100 50,100 77.614286,100 100,77.614286 100,50 100,22.385714 77.614286,0 50,0 z m 29.692858,79.692858 c -3.859184,3.859182 -8.351022,6.887754 -13.35,9.00306 -1.27041,0.536736 -2.560204,1.009184 -3.867348,1.415306 v -7.493878 c 0,-3.938774 -1.35102,-6.835714 -4.053062,-8.690816 1.692858,-0.163264 3.24694,-0.390816 4.663266,-0.683672 1.416326,-0.292858 2.913266,-0.716328 4.491838,-1.27041 1.57857,-0.55408 2.994896,-1.213264 4.247958,-1.97755 1.253062,-0.765306 2.458164,-1.758164 3.613266,-2.978572 1.155102,-1.220408 2.12449,-2.604082 2.905102,-4.15 0.780612,-1.545918 1.4,-3.40204 1.855102,-5.566326 0.455102,-2.164286 0.683674,-4.54898 0.683674,-7.153062 0,-5.045918 -1.643878,-9.341836 -4.931634,-12.890816 C 77.44796,33.35 77.285714,29.10204 75.463266,24.512244 l -1.22143,-0.145918 c -0.845918,-0.09796 -2.368366,0.260204 -4.565306,1.07449 -2.196938,0.814286 -4.663264,2.14796 -7.396938,4.004082 -3.87449,-1.07449 -7.893878,-1.611224 -12.061224,-1.611224 -4.19898,0 -8.203062,0.536734 -12.012246,1.611224 -1.72449,-1.17245 -3.361224,-2.139796 -4.907142,-2.905102 C 31.753062,25.77449 30.516326,25.254082 29.587756,24.97653 28.660204,24.7 27.79796,24.528572 27,24.463266 c -0.79796,-0.0653 -1.310204,-0.08062 -1.537756,-0.04898 -0.22755,0.03164 -0.390816,0.0653 -0.487754,0.09796 -1.82347,4.62245 -1.985714,8.87143 -0.487756,12.743878 -3.287754,3.54796 -4.931632,7.844898 -4.931632,12.890816 0,2.604082 0.227552,4.988776 0.683674,7.153062 0.456122,2.164286 1.07449,4.020408 1.855102,5.566326 0.780612,1.545918 1.75,2.929592 2.905102,4.15 1.155102,1.220408 2.360204,2.213266 3.613264,2.978572 1.253062,0.766326 2.669388,1.42449 4.24796,1.97755 1.578572,0.554082 3.07551,0.976532 4.491836,1.27041 1.416328,0.292856 2.970408,0.521428 4.663266,0.683672 -2.669388,1.82347 -4.004082,4.720408 -4.004082,8.690816 v 7.639796 C 36.536734,89.818368 35.083674,89.3 33.656122,88.695918 c -4.99898,-2.115306 -9.490816,-5.143878 -13.35,-9.00306 -3.859184,-3.859184 -6.887754,-8.351022 -9.00306,-13.35 C 9.1163263,61.171428 8.0071428,55.67347 8.0071428,50 c 0,-5.67347 1.1091835,-11.171428 3.2969392,-16.342858 2.115306,-4.998978 5.143878,-9.490816 9.00306,-13.35 3.859184,-3.859182 8.351022,-6.887754 13.35,-9.00306 C 38.828572,9.1163266 44.32653,8.0071428 50,8.0071428 c 5.67347,0 11.171428,1.1091838 16.342858,3.2969392 5,2.115306 9.490816,5.143878 13.35,9.00306 3.859182,3.859184 6.887754,8.351022 9.00306,13.35 2.186736,5.17245 3.295918,10.67041 3.295918,16.342858 0,5.672448 -1.109182,11.171428 -3.296938,16.342858 -2.115306,4.998978 -5.143878,9.490816 -9.00204,13.35 l 0,0 z"></path></svg></a></li>
+</ul>
+  
+  
+  
+<ul class="subscribe">
+  <li><a href="https://twitter.com/fly1tkg" rel="subscribe-twitter" title="@fly1tkg on Twitter" target="_blank"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25" height="25" viewBox="0 0 512 512"><path class="social" d="M0.001,334.932c33.327,30.816,118.891,59.981,188.517-8.271c-12.52,1.955-22.972-0.416-30.913-8.269
+  c-7.531-7.465-7.945-15.182-3.914-22.202c3.275-5.725,10.184-9.741,16.977-13.934c-12.323,2.285-22.829,1.095-32.218-3.706
+  c-12.604-6.444-24.863-13.228-28.3-27.207c7.71-8.112,16.28-15.359,34.831-12.627c-17.45-5.83-33.087-13.429-44.41-24.815
+  c-11.028-11.091-12.163-18.302-13.932-26.996c9.632-3.567,19.688-5.421,30.478-4.353c-24.397-12.476-34.757-29.63-40.487-48.325
+  c-1.731-5.652-2.044-11.03-1.31-16.545c98.826,37.305,145.11,64.109,170.662,89.251c11.496-30.589,38.3-99.868,78.371-123.646
+  c0.191,3.77-1.309,7.837-4.357,12.189c11.863-6.609,21.125-17.188,37.445-16.98c-1.879,7.723-7.279,13.904-17.85,17.854
+  c10.662-4.084,21.463-7.545,32.65-9.578c10.375-1.881,10.229,6.304,4.355,10.444c-11.916,8.412-24.578,9.456-37.006,13.498
+  c38.105,0.949,69.266,18.994,93.604,58.343c8.088,13.074,13.52,26.149,14.807,40.487c16.254,4.563,32.426,5.494,48.76,2.61
+  c4.475-0.796,8.645-1.63,12.627-3.482c-6.354,9.529-13.686,17.356-23.947,20.899c-9.811,3.387-19.637,6.688-30.473,6.968
+  c17.641,6.675,37.082,7.045,57.033,5.659c-24.402,23.486-43.08,22.922-61.824,22.642c-8.221,34.703-25.025,69.315-60.52,101.005
+  c-46.559,41.569-96.678,61.397-148.457,65.742c-48.552,4.07-95.488,3.512-146.726-20.464
+  C56.486,393.349,24.648,368.884,0.001,334.932L0.001,334.932z"/></svg></a></li>
+</ul>
+  
+  
+  
+  
+  
+  
+<ul class="subscribe">
+  <li><a href="https://plus.google.com/+ShoichiTakagi" rel="publisher" title="Google+ Profile" target="_blank"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25" height="25" viewbox="0 0 100 100"><path class="social" d="M 23.03264,55.19021 C 32.01805,55.457578 38.046082,46.137447 36.495958,34.370183 34.943794,22.603939 26.398215,13.161349 17.411784,12.89296 8.4253533,12.625592 2.3973217,21.630392 3.9494863,33.400718 5.5006303,45.164921 14.043148,54.921821 23.03264,55.19021 z M 99.99898,24.999027 100,0 -0.00797206,0 0.0052943,16.202408 C 5.7047282,11.184661 13.611481,6.9914696 21.771315,6.9914696 c 8.721103,0 34.888495,0 34.888495,0 l -7.807765,6.6035874 -11.062106,0 c 7.33732,2.81349 11.246815,11.3407 11.246815,20.090377 0,7.348545 -4.082979,13.667416 -9.852826,18.161652 -5.629021,4.385043 -6.696453,6.220904 -6.696453,9.948752 0,3.180866 6.030073,8.594563 9.183386,10.81923 9.217061,6.498477 12.199952,12.530591 12.199952,22.603843 0,1.604209 -0.198996,3.206378 -0.591884,4.780993 L 100,100 c 0,0 0,-46.594917 0,-68.751495 l -18.750474,0 0,18.750475 -6.250499,0 0,-18.750475 -18.750474,0 0,-6.250498 18.750474,0 0,-18.7494538 6.250499,0 0,18.7494538 18.750474,0 z M 18.147557,74.798916 c 2.111393,0 4.04522,-0.05817 6.048441,-0.05817 -2.651232,-2.571634 -4.749358,-5.722905 -4.749358,-9.606889 0,-2.305285 0.738834,-4.52485 1.77157,-6.496436 -1.053145,0.0745 -2.127721,0.09695 -3.234952,0.09695 -7.261803,0 -13.4286215,-2.351208 -17.99020957,-6.236212 l 0,6.56685 0.00102048,19.70055 C 5.2128523,76.28781 11.409265,74.798916 18.147557,74.798916 z M 44.474145,93.051391 C 43.002599,87.308076 37.788918,84.46091 30.518951,79.420713 c -2.644088,-0.85313 -5.556565,-1.35521 -8.681304,-1.387866 -8.752739,-0.09389 -17.2452523,3.525266 -21.84561906,8.743028 l 0,13.224125 44.64641606,-0.0011 c 0,0 0.263286,-2.21038 0.263286,-3.362512 -10e-4,-1.222547 -0.151032,-2.419581 -0.427585,-3.58498 z"></path></svg></a></li>
+</ul>
+  
+  
+  
+    
+      <form action="https://www.google.com/search" method="get">
+        <fieldset role="search">
+          <input type="hidden" name="sitesearch" value="fly1tkg.github.io" />
+    
+          <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+        </fieldset>
+      </form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/2013/02/simple-xml-parse/">SimpleでXMLをParseする</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+        
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>JavaでXMLをParseするライブラリの一つにSimpleというものがあります。こいつはAndroidにも使えるので紹介します。</p>
+
+<h1>Simpleとは</h1>
+
+<p>POJOなオブジェクトに特定のannotationをつけると、そのオブジェクトとXMLを簡単に相互変換出来るようになる。すごくいいやつ。</p>
+
+<p><a href="http://simple.sourceforge.net/">http://simple.sourceforge.net/</a></p>
+
+<h1>インストール</h1>
+
+<p>Downloadのページから最新版をダウンロードします。</p>
+
+<p><a href="http://simple.sourceforge.net/download.php">http://simple.sourceforge.net/download.php</a></p>
+
+<p>ダウンロードした中身のjarフォルダの中身をAndroid Projectのlibsフォルダに入れればOK</p>
+
+<p>Mavenを利用しているならpom.xmlに</p>
+
+<div>
+  <div id="highlighter_869051">
+    <pre class="brush: xml; gutter: true">&lt;dependency&gt;
+    &lt;groupId&gt;org.simpleframework&lt;/groupId&gt;
+    &lt;artifactId&gt;simple-xml&lt;/artifactId&gt;
+    &lt;version&gt;2.6.9&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+  </div>
+</div>
+
+
+<p>を記述すればOK</p>
+
+<p>サンプル</p>
+
+<p><a href="http://simple.sourceforge.net/download/stream/doc/tutorial/tutorial.php">本家</a>のTutorialから、XML &ndash;> POJOオブジェクトの方法について。</p>
+
+<p>例えば以下のようなXMLがあった場合、</p>
+
+<div>
+  <div id="highlighter_657849">
+    <pre class="brush: xml; gutter: true">&lt;root id="123"&gt;
+   &lt;message&gt;Example message&lt;/message&gt;
+&lt;/root&gt;</pre>
+  </div>
+</div>
+
+
+<p>これを以下のPOJOの中にいれたい</p>
+
+<div>
+  <div id="highlighter_187164">
+    <pre class="brush: java; gutter: true">@Root(name = "root")
+public class Example {
+ 
+    @Element(name = "message")
+    private String text;
+ 
+    @Attribute(name = "id")
+    private int index;
+ 
+    public String getMessage() {
+        return text;
+    }
+ 
+    public int getId() {
+        return index;
+    }
+}</pre>
+  </div>
+</div>
+
+
+<p>この変換処理はSimpleを使えばこんなに簡単</p>
+
+<div>
+  <div id="highlighter_121500">
+    <pre class="brush: java; gutter: true">String xml = "&lt;root id="123"&gt;&lt;message&gt;Example message&lt;/message&gt;&lt;/root&gt;";
+        Serializer serializer = new Persister();
+        try {
+            Example example = serializer.read(Example.class, xml);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }</pre>
+  </div>
+</div>
+
+
+<p>ネストしたオブジェクトに変換する</p>
+
+<p>XMLが深くネストしている場合はこんな感じ。要素名がクラス名やメンバ変数名を一致している場合はnameのプロパティを省略出来ます。</p>
+
+<div>
+  <div id="highlighter_187111">
+    <pre class="brush: xml; gutter: true">&lt;configuration id="1234"&gt;
+   &lt;server port="80"&gt;
+      &lt;host&gt;www.domain.com&lt;/host&gt;
+      &lt;security ssl="true"&gt;
+         &lt;keyStore&gt;example keystore&lt;/keyStore&gt;
+      &lt;/security&gt;
+   &lt;/server&gt;
+&lt;/configuration&gt;</pre>
+  </div>
+</div>
+
+
+
+
+<div>
+  <div id="highlighter_832560">
+    <pre class="brush: java; gutter: true">@Root
+public class Configuration {
+ 
+   @Element
+   private Server server;
+ 
+   @Attribute
+   private int id;
+ 
+   public int getIdentity() {
+      return id;
+   }
+ 
+   public Server getServer() {
+      return server;          
+   }
+}
+ 
+public class Server {
+ 
+   @Attribute
+   private int port;
+ 
+   @Element
+   private String host;
+ 
+   @Element
+   private Security security;
+ 
+   public int getPort() {
+      return port;          
+   }
+ 
+   public String getHost() {
+      return host;          
+   }
+ 
+   public Security getSecurity() {
+      return security;          
+   }
+}
+ 
+public class Security {
+ 
+   @Attribute
+   private boolean ssl;
+ 
+   @Element
+   private String keyStore;
+ 
+   public boolean isSSL() {
+      return ssl;          
+   }
+ 
+   public String getKeyStore() {
+      return keyStore;          
+   }
+}</pre>
+  </div>
+</div>
+
+
+<h1>同じ要素が連続しているときはListに変換できる</h1>
+
+<div>
+  <div id="highlighter_349824">
+    <pre class="brush: xml; gutter: true">&lt;propertyList name="example"&gt;
+   &lt;list&gt;
+      &lt;entry key="one"&gt;
+         &lt;value&gt;first value&lt;/value&gt;
+      &lt;/entry&gt;
+      &lt;entry key="two"&gt;
+         &lt;value&gt;first value&lt;/value&gt;
+      &lt;/entry&gt;
+      &lt;entry key="three"&gt;
+         &lt;value&gt;first value&lt;/value&gt;
+      &lt;/entry&gt;
+      &lt;entry key="four"&gt;
+         &lt;value&gt;first value&lt;/value&gt;
+      &lt;/entry&gt;
+   &lt;/list&gt;
+&lt;/propertyList&gt;</pre>
+  </div>
+</div>
+
+
+
+
+<div>
+  <div id="highlighter_600736">
+    <pre class="brush: java; gutter: true">@Root
+public class PropertyList {
+ 
+   @ElementList
+   private List&lt;Entry&gt; list;
+ 
+   @Attribute
+   private String name;
+ 
+   public String getName() {
+      return name;
+   }
+ 
+   public List getProperties() {
+      return list;
+   }
+}
+ 
+@Root
+public class Entry {
+ 
+   @Attribute
+   private String key;
+ 
+   @Element
+   private String value;
+ 
+   public String getName() {
+      return name;
+   }
+ 
+   public String getValue() {
+      return value;
+   }
+}</pre>
+  </div>
+</div>
+
+
+<h1>必須では無いノードを指定する</h1>
+
+<p>XMLの中に必須ではないノードがある場合、required = falseのオプションの指定が必要です。</p>
+
+<div>
+  <div id="highlighter_404723">
+    <pre class="brush: xml; gutter: true">&lt;optionalExample id="10"&gt;
+   &lt;address&gt;Some example address&lt;/address&gt;
+&lt;/optionalExample&gt;</pre>
+  </div>
+</div>
+
+
+
+
+<div>
+  <div id="highlighter_186675">
+    <pre class="brush: java; gutter: true">@Root
+public class OptionalExample {
+ 
+   @Attribute(required=false)
+   private int version;
+ 
+   @Attribute
+   private String id;
+ 
+   @Element(required=false)
+   private String name;  
+ 
+   @Element
+   private String address;
+ 
+   public int getId() {
+      return id;
+   }
+ 
+   public int getVersion() {
+      return version;
+   }
+ 
+   public String getName() {
+      return name;
+   }
+ 
+   public String getAddress() {
+      return address;
+   }
+}</pre>
+  </div>
+</div>
+
+
+<p>その他の使い方等</p>
+
+<p>本家サイトに大量に乗っているので参考にしてください。</p>
+
+<p><a href="http://simple.sourceforge.net/download/stream/doc/tutorial/tutorial.php">http://simple.sourceforge.net/download/stream/doc/tutorial/tutorial.php</a></p>
+
+<p><a href="http://simple.sourceforge.net/download/stream/doc/tutorial/tutorial.php">http://simple.sourceforge.net/download/stream/doc/examples/examples.php</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/2013/02/nine-old-androids/">AndroidのアニメーションBackportライブラリ「NineOldAndroids」を使う</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+        
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>AndroidのアニメーションのパッケージってちゃんとAPI Level 1から準備されていて、１年前僕が始めて受託でアプリ作ったときは、iPhoneに負けまいと壮絶なコードを書いたものです。あのときは若かったなー、受託のコードにどれだけ力入れてるんだって。（いや、いまでも受託アプリに大分力入ったコード書いてるぞ、、、こういう性格なんだな）</p>
+
+<p>で、その昔っからあるanimationだと色々不都合で、ちょっと前につ部のミーティングで発表したスライドがこれ。</p>
+
+<div style="margin-bottom: 5px;">
+  <strong> <a title="AndroidのアニメーションをちょっとだけLT" href="https://www.slideshare.net/shoichitakagi/androidlt-15647425" target="_blank">AndroidのアニメーションをちょっとだけLT</a> </strong> from <strong><a href="http://www.slideshare.net/shoichitakagi" target="_blank">Shoichi Takagi</a></strong>
+</div>
+
+
+
+
+<div style="margin-bottom: 5px;">
+  <p>
+    このなかでAnimationのBackportライブラリについて一言書いてあるのだけれど、僕は<strong>NineOldAndroids</strong>というライブラリが良いんじゃないかなと思います。
+  </p>
+  
+  <p>
+    NineOldAndroids<br /> <a href="http://nineoldandroids.com/">http://nineoldandroids.com/</a>
+  </p>
+  
+  <p>
+    こいつはHoneyCombで実装されたAnimationをBackPortするライブラリです。
+  </p>
+  
+  <p>
+    これをつくったのはJakeWhartonさん。そう、あの<strong>ActionBarSherlock</strong>を公開している人ですね。
+  </p>
+  
+  <p>
+    簡単に使い方を説明します。
+  </p>
+  
+  <h1>
+    まずはダウンロード
+  </h1>
+  
+  <p>
+    NineOldAndroids – DownLoad<br /> <a href="http://nineoldandroids.com/#download">http://nineoldandroids.com/#download</a>
+  </p>
+  
+  <p>
+    ZIPでもTGZでもよいので、ダウンロードして展開してください。
+  </p>
+  
+  <p>
+    WorkSpaceにNineOldAndroidsを追加
+  </p>
+  
+  <p>
+    Eclipseを開いて、左側のPackage Exploreの上で右クリック -> import -> Android -> Existing Android code into Workspaceと選択
+  </p>
+  
+  <p>
+    先ほどダウンロードしたファイルのlibraryフォルダとsampleフォルダを選択すればOK。これでサンプルが動くようになります。
+  </p>
+  
+  <h1>
+    サンプル以外でNineOldAndroidsを使う
+  </h1>
+  
+  <p>
+    Package Exploreで使いたいProjectを右クリック -> Propertiesを選択。
+  </p>
+  
+  <p>
+    ウインドウが開いたら左側のメニューからAndroidを選択
+  </p>
+  
+  <p>
+    Libraryの項目で先ほどのLibrary ProjectをAddすればOK。これで使えるようになります。
+  </p>
+  
+  <h1>
+    使い方
+  </h1>
+  
+  <p>
+    基本的にはHoneyComb以降のandroid.animationパッケージのクラスがそのまま使えるようになります。android.animation.*のかわりにcom.nineoldandroids.*をimportすれば使えます。sampleコードがいろんなアニメーションのデモをしているのでそちらを参考にしながらかくといいです。
+  </p>
+  
+  <p>
+    参考) android.animation<br /> <a href="http://developer.android.com/reference/android/animation/package-summary.html">http://developer.android.com/reference/android/animation/package-summary.html</a>
+  </p>
+</div>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/2013/02/android-youtube-player-api/">Android YouTube Player APIをつかったアプリ内YouTube再生</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+        
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>以前[WebViewを使ったYoutubeの再生方法][1]は紹介しましたが、アプリ内でYoutubeを再生する方法がもう一つあります。それはAndroid YouTube Plugin APIを利用した方法です。</p>
+
+<p>Googleの日本の人のエントリーがこちら<br/>
+<a href="http://googledevjp.blogspot.jp/2013/01/android-youtube-player-api-webview.html">http://googledevjp.blogspot.jp/2013/01/android-youtube-player-api-webview.html</a></p>
+
+<p>Android YouTube Player APIを利用してみてメリットとデメリットを以下にまとめました。</p>
+
+<p><strong>メリット</strong></p>
+
+<ul>
+<li>JavaのネイティブコードでYouTubeの再生制御ができる。</li>
+<li>フルスクリーン表示や画面回転の制御が簡単</li>
+</ul>
+
+
+<p>他にも上記リンクの人が言及しています。</p>
+
+<p><strong>デメリット</strong></p>
+
+<ul>
+<li>端末のYouTubeアプリが最新になっている必要がある。(時間がたてば解決しますが)</li>
+<li>基底クラスにcom.google.android.youtube.player.YouTubeBaseActivityを使う必要があるのでActionBarSherlockとか3rdのライブラリとの菱形継承問題(まあもう片方がオープンソースならばどうにでもなりますが)</li>
+</ul>
+
+
+<p>で、使い方が以下リンクに書かれているのですが、英語じゃ分かんねえよって人のために、簡単にサンプルコードを動かすまでの手順を紹介します。</p>
+
+<p itemprop="name">
+  YouTube Android Player API<br /> <a href="https://developers.google.com/youtube/android/player/">https://developers.google.com/youtube/android/player/</a>
+</p>
+
+
+
+
+<h1 itemprop="name">
+  アプリの登録
+</h1>
+
+
+
+
+<p itemprop="name">
+  まずはGoogle APIs Consoreでプロジェクトを作成します。これを利用するにはGoogleのアカウントが必要です。
+</p>
+
+
+
+
+<p itemprop="name">
+  以下リンクを開いて、Create Projectをクリックしてください
+</p>
+
+
+
+
+<p itemprop="name">
+  Google APIs Consore<br /> <a href="https://code.google.com/apis/console">https://code.google.com/apis/console</a>
+</p>
+
+
+
+
+<p><p itemprop="name">
+  <p itemprop="name"></p>
+
+<pre><code>もし他のプロジェクトが既にある場合は、左側のメニューからCreateをクリックすると新たにProjectを作成することができます。
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <h1 itemprop="name"></p>
+
+<pre><code>YouTube Data API v3をONにする
+</code></pre>
+
+<p>  </h1></p>
+
+<p>  <p itemprop="name"></p>
+
+<pre><code>左メニュのServiceの項目を選択し、下の方にあるYouTube Data API v3をONにします。
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <h1 itemprop="name"></p>
+
+<pre><code>API Keyの発行
+</code></pre>
+
+<p>  </h1></p>
+
+<p>  <p itemprop="name"></p>
+
+<pre><code>左側のメニューからAPI Accessをクリックします
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <p></p>
+
+<pre><code>Create Android Keyを押します
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <p></p>
+
+<pre><code>ダイアログが開きますが、何も入力せずCreateボタンを押すと全てのアプリで利用できるKeyを発行できます。(ここについては詳しくは後日かけたらいいな)
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <p></p>
+
+<pre><code>この部分のKeyを利用します。
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <h1 itemprop="name"></p>
+
+<pre><code>ライブラリとサンプルコードを入手する
+</code></pre>
+
+<p>  </h1></p>
+
+<p>  <p itemprop="name"></p>
+
+<pre><code>ライブラリは以下リンクの右側にあるdownloadってかいてあるところからダウンロードできます。
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <p itemprop="name"></p>
+
+<pre><code>YouTube Android Player API – Download&lt;br /&gt; &lt;a href="https://developers.google.com/youtube/android/player/downloads/"&gt;https://developers.google.com/youtube/android/player/downloads/&lt;/a&gt;
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <h1 itemprop="name"></p>
+
+<pre><code>サンプルコードをインポートする
+</code></pre>
+
+<p>  </h1></p>
+
+<p>  <p itemprop="name"></p>
+
+<pre><code>Eclipseを起動して Package Exploreの上で右クリック、import -&gt; Android -&gt; Existing Android code into workspaceを選択します。
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <p itemprop="name"></p>
+
+<pre><code>先ほどダウンロードした中身のsampleを選択してインポートします。
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <p itemprop="name"></p>
+
+<pre><code>srcフォルダのcom.examples.youtubeapidemoパッケージのDepeloperKey.javaを開きます
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <div></p>
+
+<pre><code>&lt;div id="highlighter_983196"&gt;
+  &lt;pre class="brush: java; gutter: true"&gt;public static final String DEVELOPER_KEY = null;&lt;/pre&gt;
+&lt;/div&gt;
+</code></pre>
+
+<p>  </div></p>
+
+<p>  <p></p>
+
+<pre><code>となっている所を先ほどのDeveloper Keyを入力してください。
+</code></pre>
+
+<p>  </p></p>
+
+<p>  <p></p>
+
+<pre><code>これでアプリを起動すれば、YouTube Android Player APIのサンプルコードを動かすことができます。&lt;br /&gt; &lt;br /&gt; &lt;!-- blog_widget --&gt;
+
+&lt;br /&gt; &lt;ins class="adsbygoogle"&lt;br /&gt; style="display:inline-block;width:300px;height:250px"&lt;br /&gt; data-ad-client="ca-pub-6228702140385127"&lt;br /&gt; data-ad-slot="3243171800"&gt;&lt;/ins&gt;&lt;br /&gt;
+</code></pre>
+
+<p>  </p></p>
+
+<p> [1]: <a href="http://blog.fly1ncu.com/2013/01/android-webview-youtube/">http://blog.fly1ncu.com/2013/01/android-webview-youtube/</a> &ldquo;WebViewをつかったYouTubeの再生方法&rdquo;</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/2013/02/android-asynchronous-http-client-2/">Androidの非同期通信ライブラリをつかう その2- Android Asynchronous Http Client</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+        
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>続き書くとか言って、<a href="http://blog.fly1ncu.com/2012/08/android-asynchronous-http-client/">半年も書いていなかった</a>。簡単ですが続きを書きます。</p>
+
+<h1>Android Asynchronous Http Clientとは？</h1>
+
+<p>Androidの非同期通信ライブラリの一つ、詳しくは<a href="http://blog.fly1ncu.com/2012/08/android-asynchronous-http-client/">前回のエントリー記事</a>を参照してください。<br/>
+僕の調査によると<strong>FxCamera</strong>にも使われていますね。このライブラリ。(LICENSE.txtからの確認なので、ソースコードのみの利用かもしれませんが)</p>
+
+<p>半年で変わったことと言えば、<strong>同期通信が出来るようになったことですね</strong>。(ライブラリ名とレポジトリ名に反してない？)。AsyncTaskなどとの相性で追加したようですが、、、</p>
+
+<h1>MyAsyncHttpClientを作る</h1>
+
+<p>オススメの使い方としてMyAsyncHttpClientを作ることです。そうすることで、自分の好みにセッティングした通信を行うことが出来ます。</p>
+
+<div>
+  <div id="highlighter_712246">
+    <pre class="brush: java; gutter: true">public class MyAsyncHttpClient extends AsyncHttpClient {
+    public MyAsyncHttpClient() {
+        // ここに設定を書く
+    }
+}</pre>
+  </div>
+</div>
+
+
+<h1>userAgentを設定する</h1>
+
+<p>AsyncHttpClientのデフォルトのuserAgentは<strong>Android Asynchronous Http Client/VERSION (<a href="http://loopj.com/android-async-http/">http://loopj.com/android-async-http/</a>)</strong>です。デバッグ等のことを考えるとアプリのパッケージ名やバージョンといった文字列に変更した方が良さそうです。userAgentの変更はAsyncHttpClient#setUserAgent(String userAgent)で任意のものに変更することができます。</p>
+
+<div>
+  <div id="highlighter_641411">
+    <pre class="brush: java; gutter: true">setUserAgent("MyApp ver1.0");</pre>
+  </div>
+</div>
+
+
+<h1>Time out時間を設定する</h1>
+
+<p>Time outの時間もメソッドが準備されています。AsyncHttpClient#setTimeOut(int timeOut)です。こちらはデフォルトで10秒です</p>
+
+<div>
+  <div id="highlighter_780440">
+    <pre class="brush: java; gutter: true">setTimeOut(8);</pre>
+  </div>
+</div>
+
+
+<h1>Basic認証のためのユーザー名とパスワードをセットする</h1>
+
+<div>
+  <div id="highlighter_456551">
+    <pre class="brush: java; gutter: true">setBasicAuth("user", "password");</pre>
+  </div>
+</div>
+
+
+<h1>注意点</h1>
+
+<p>MyAsyncHttpClientを準備したはいいけど、いざ使うときに<strong>AsyncHttpClientで実装しないようにしてください</strong>（自戒）</p>
+
+<p>(前回)<a href="http://blog.fly1ncu.com/2012/08/android-asynchronous-http-client/">Androidの非同期通信ライブラリをつかう その1- Android Asynchronous Http Client</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/2013/01/android-webview-youtube/">WebViewでYoutubeを再生する</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+        
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>初期状態のWebViewではYouTubeのiframeを埋め込んだサイトを表示できません。</p>
+
+<h1>マニフェストの設定を行う</h1>
+
+<p>Youtubeの再生には以下の設定が必要です。</p>
+
+<ul>
+<li>user-permissionのInternet</li>
+<li>hardware accelarationの有効化</li>
+</ul>
+
+
+<div>
+  <div id="highlighter_80230">
+    <pre class="brush: xml; gutter: true">&lt;uses-permission
+        android:name="android.permission.INTERNET"/&gt;
+ 
+&lt;application
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" &gt;</pre>
+  </div>
+</div>
+
+
+<p>&nbsp;</p>
+
+<h1>WebViewのJavascriptとPluginをONにする</h1>
+
+<p>以下ソースを参考にJavascriptとPluginをONにします。mWebViewはWebViewのメンバ変数名です。</p>
+
+<div>
+  <div id="highlighter_973509">
+    <pre class="brush: java; gutter: true">private void initWebView() {
+        mWebView = (WebView) findViewById(R.id.webView);
+ 
+        // WebViewの設定
+        WebSettings settings = mWebView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        if (Build.VERSION.SDK_INT &gt; 7) {
+            settings.setPluginState(PluginState.ON);
+        } else {
+            settings.setPluginsEnabled(true);
+        }
+ 
+        String html = "";
+        html += "&lt;html&gt;&lt;body&gt;";
+        html += "&lt;iframe width="560" height="315" src="http://www.youtube.com/embed/MU9Srs04sFU?rel=0" frameborder="0" allowfullscreen&gt;&lt;/iframe&gt;";
+        html += "&lt;/body&gt;&lt;/html&gt;";
+ 
+        mWebView.loadData(html, "text/html", null);
+    }</pre>
+  </div>
+</div>
+
+
+<h1>再生中に他のアクティビティに移動すると再生されっぱなしになってしまう</h1>
+
+<p>以下のコードを追加する</p>
+
+<div>
+  <div id="highlighter_258286">
+    <pre class="brush: java; gutter: true">@Override
+    protected void onResume() {
+        super.onResume();
+        try {
+            WebView.class.getMethod("onResume").invoke(mWebView);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+ 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        try {
+            WebView.class.getMethod("onPause").invoke(mWebView);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }</pre>
+  </div>
+</div>
+
+
+<h1>サンプルコード</h1>
+
+<p>GitHub上に公開してあります。</p>
+
+<p><a href="https://github.com/fly1tkg/android-youtube-webview-sample">https://github.com/fly1tkg/android-youtube-webview-sample</a></p>
+
+<p>追記) Youtube Android Player APIをつかった方法を書きました</p>
+
+<p><a href="http://blog.fly1ncu.com/2013/02/android-youtube-player-api/%20%E2%80%8E">http://blog.fly1ncu.com/2013/02/android-youtube-player-api/ ‎</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/2013/01/android-progressbar-guruguru/">ProgressBarのぐるぐるをカスタマイズ</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+        
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>AndroidのProgressBarのぐるぐるをカスタマイズする方法全然見つからなかったのでメモ</p>
+
+<p>drawableフォルダにこれを入れる。android:drawableには変えたいぐるぐるの画像を入れます。</p>
+
+<pre class="brush: xml; gutter: true">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;animated-rotate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/progress"
+    android:pivotX="50%"
+    android:pivotY="50%" /&gt;</pre>
+
+
+<p>で、これをlayoutのProgressBarに適用。android:interminateDrawableの部分ですね。</p>
+
+<div>
+  <div id="highlighter_947093">
+    <pre class="brush: xml; gutter: true">&lt;ProgressBar
+           android:id="@+id/mProgressBar"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:indeterminateDrawable="@drawable/progressbar_bg" /&gt;</pre>
+  </div>
+</div>
+
+
+<p>回転のスピードはDurationとか変えてみたんだけど、いまいち分からず。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/2012/08/android-proguard/">AndroidでProguardによる難読化</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+        
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>AndroidアプリはJavaで書かれていますが、<strong>Javaはデコンパイルが容易です。</strong>そのため簡単にソースコードが丸見えになってしまいます。そのためにソースコード難読化がです。ProguardはJavaのソースコードを難読化するツールで、最新のADTにはAndroidで簡単に使えるようになっています。以下に現在最新の<strong>ADT20</strong>で行った方法をメモしておきます。</p>
+
+<h1>使い方</h1>
+
+<p>project.propertiesのproguard.configの行をアンコメント(先頭の#を消す)します。<br/>
+その後 File > Export > Export Android Applicationでリリースビルドをします。</p>
+
+<div>
+  <div id="highlighter_590513">
+    <pre class="brush: text; gutter: true"># To enable ProGuard to shrink and obfuscate your code, uncomment this (available properties: sdk.dir, user.home):
+proguard.config=${sdk.dir}/tools/proguard/proguard-android.txt:proguard-project.txt</pre>
+  </div>
+</div>
+
+
+<p>たったこれだけでソースコードの難読化ができます。</p>
+
+<p>難読化の結果はprojectフォルダの中に生成されたproguardフォルダの中の4つのテキストファイルに出力されます。</p>
+
+<ul>
+<li>dump.txt &ndash;> apkファイルの構成</li>
+<li>mapping.txt &ndash;> 難読化されたクラスやメソッドなどの履歴</li>
+<li>seeds.txt &ndash;> 難読化されていないクラスなどのリスト</li>
+<li>usage.txt &ndash;> 削除されたコードのリスト</li>
+</ul>
+
+
+<p>mapping.txtを開いてみるとクラス名やメソッド名がどのように変更されたかを見る事ができます。</p>
+
+<div>
+  <div id="highlighter_750225">
+    <div>
+      <a href="http://b.fly1tkg.com/2012/08/android-proguard/#">?</a>
+    </div>
+    
+    <table border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td>
+          <div>
+            1
+          </div>
+          
+          <div>
+            2
+          </div>
+          
+          <div>
+            3
+          </div>
+          
+          <div>
+            4
+          </div>
+          
+          <div>
+            5
+          </div>
+          
+          <div>
+            6
+          </div>
+          
+          <div>
+            7
+          </div>
+          
+          <div>
+            8
+          </div>
+          
+          <div>
+            9
+          </div>
+          
+          <div>
+            10
+          </div>
+          
+          <div>
+            11
+          </div>
+          
+          <div>
+            12
+          </div>
+          
+          <div>
+            13
+          </div>
+          
+          <div>
+            14
+          </div>
+          
+          <div>
+            15
+          </div>
+          
+          <div>
+            16
+          </div>
+          
+          <div>
+            17
+          </div>
+          
+          <div>
+            18
+          </div>
+          
+          <div>
+            19
+          </div>
+          
+          <div>
+            20
+          </div>
+          
+          <div>
+            21
+          </div>
+          
+          <div>
+            22
+          </div>
+        </td>
+        
+        <td>
+          <div>
+            <div>
+              <code>android.support.v4.app.ActivityCompatHoneycomb -&gt; android.support.v4.app.a:</code>
+            </div>
+            
+            <div>
+              <code>void invalidateOptionsMenu(android.app.Activity) -&gt; a</code>
+            </div>
+            
+            <div>
+              <code>android.support.v4.app.BackStackRecord -&gt; android.support.v4.app.b:</code>
+            </div>
+            
+            <div>
+              <code>android.support.v4.app.FragmentManagerImpl mManager -&gt; a</code>
+            </div>
+            
+            <div>
+              <code>android.support.v4.app.BackStackRecord$Op mHead -&gt; b</code>
+            </div>
+            
+            <div>
+              <code>android.support.v4.app.BackStackRecord$Op mTail -&gt; c</code>
+            </div>
+            
+            <div>
+              <code>int mNumOp -&gt; d</code>
+            </div>
+            
+            <div>
+              <code>int mEnterAnim -&gt; e</code>
+            </div>
+            
+            <div>
+              <code>int mExitAnim -&gt; f</code>
+            </div>
+            
+            <div>
+              <code>int mPopEnterAnim -&gt; g</code>
+            </div>
+            
+            <div>
+              <code>int mPopExitAnim -&gt; h</code>
+            </div>
+            
+            <div>
+              <code>int mTransition -&gt; i</code>
+            </div>
+            
+            <div>
+              <code>int mTransitionStyle -&gt; j</code>
+            </div>
+            
+            <div>
+              <code>boolean mAddToBackStack -&gt; k</code>
+            </div>
+            
+            <div>
+              <code>boolean mAllowAddToBackStack -&gt; l</code>
+            </div>
+            
+            <div>
+              <code>java.lang.String mName -&gt; m</code>
+            </div>
+            
+            <div>
+              <code>boolean mCommitted -&gt; n</code>
+            </div>
+            
+            <div>
+              <code>int mIndex -&gt; o</code>
+            </div>
+            
+            <div>
+              <code>int mBreadCrumbTitleRes -&gt; p</code>
+            </div>
+            
+            <div>
+              <code>java.lang.CharSequence mBreadCrumbTitleText -&gt; q</code>
+            </div>
+            
+            <div>
+              <code>int mBreadCrumbShortTitleRes -&gt; r</code>
+            </div>
+            
+            <div>
+              <code>java.lang.CharSequence mBreadCrumbShortTitleText -&gt; s</code>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+
+<p>このようにクラス名やメソッド名が1~2文字程度の英字に置き換わります。</p>
+
+<h1>Proguardの仕組み</h1>
+
+<p>Proguardには<strong>コードの短縮、最適化、難読化、事前検証</strong>の4つのステップがあります。</p>
+
+<p>コードの短縮や最適化のステップで、使用していないクラスやメソッドを削除したり変数の折りたたみを行ったりする事で、ソースコードの圧縮を行います。</p>
+
+<p>難読化のステップではクラス名やメソッド名などを1~2文字の英数字で置き換え、難読化をさせます。</p>
+
+<p>事前検証のステップではProguardでの処理で問題が無いかチェックします。</p>
+
+<p>proguardの設定ファイルは２カ所に分かれておいてあって、１つは<android sdkのパス>/tools/proguard/proguard-android.txt<br/>
+こちらはapkにするときのproguard全体の設定が書かれています。</p>
+
+<p>もう一つはprojectフォルダの中のproguard-project.txt　こちらにprojectごとの設定を書きます</p>
+
+<h1>注意点</h1>
+
+<p>ProguardはピュアなJavaのコードに対してはきちんと動くようですが、Androidの様にxmlなどの静的なファイルを参照したり、いろいろしてると、誤作動で使用しているクラスやメソッドが消されてしまうことがあります。<br/>
+基本的にはusage.txtと見比べながら、必要なコードが消されていないかや、mapping.txtを見てリネームしてはいけないものがリネームされていないかをチェックする必要があります。</p>
+
+<h2>ライブラリとしてjarを使用している場合</h2>
+
+<p>-libraryjar　&lt;jarのパス>　のオプションをproguard-project.txtに追加します</p>
+
+<p>例</p>
+
+<div>
+  <div id="highlighter_510546">
+    <pre class="brush: text; gutter: true">-libraryjars ./libs/actionbarsherlock-plugin-maps-4.1.0.jar
+-libraryjars ./libs/android-async-http-1.4.0.jar
+-libraryjars ./libs/jsonpullparser-core-1.4.jar
+-libraryjars ./libs/twitter4j-core-android-2.2.6.jar</pre>
+  </div>
+</div>
+
+
+<p>また一般的なオープンソースのライブラリであれば、StackOverFlowとかで推奨の設定が書かれていたりします。<br/>
+例えばtwitter4jであればこれ　<a href="http://stackoverflow.com/questions/7721397/how-to-make-proguard-ignore-external-libraries" title="http://stackoverflow.com/questions/7721397/how-to-make-proguard-ignore-external-libraries">http://stackoverflow.com/questions/7721397/how-to-make-proguard-ignore-external-libraries</a></p>
+
+<div>
+  <div id="highlighter_458258">
+    <pre class="brush: text; gutter: true">-keep class javax.** { *; }
+-keep class org.** { *; }
+-keep class twitter4j.** { *; }</pre>
+  </div>
+</div>
+
+
+<p>-keep　オプションは指定したクラスを難読化しないというオプションです</p>
+
+<h2>ライブラリプロジェクトを使用している場合</h2>
+
+<p>library projectを参照している場合は<library projectのパッケージ名>.R.classがよく消されます。<br/>
+特にlibrary projectの中のdrawableなどのresourceを参照している場合です。</p>
+
+<p>-keep class &lt;パッケージ名>.R { *; }</p>
+
+<p>などで消されないようにしましょう</p>
+
+<h2>Android NDKでJNIのメソッドを読んでいる場合</h2>
+
+<p>ラッパーのクラスを-keepメソッドで難読化しないようにしましょう。<br/>
+nativeを読んでいるメソッドはProguard側で使用されていないメソッドとして消される場合があります</p>
+
+<h2>最後に</h2>
+
+<p>Proguardを使用したからといって、定数の中身まで難読化はされません。パスワードなどを平文でapkに含めないようにしましょう。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/2012/08/android-asynchronous-http-client/">Androidの非同期通信ライブラリをつかう その１- Android Asynchronous Http Client</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+        
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><strong>Androidで通信するのめんどくさいです。</strong>めんどくさい理由が2つあります</p>
+
+<ul>
+<li>そもそもHttpClientのコード書くのがめんどくさい。</li>
+<li>非同期通信をするのがめんどくさい。</li>
+</ul>
+
+
+<p>１つ目は僕の主観かもしれないですが、めんどくさい。だいたい毎回同じようなコードなので僕はコピペです。しかしコピペするならライブラリを使用するのがスマートですよね。</p>
+
+<p>２つ目については、Androidで通信するときってメインのスレッドでやると、そこで描画の処理が止まってフリーズしているように見えるので別スレッドで非同期に通信するのが一般的ですよね。<br/>
+<strong>Honeycomb以降だと標準でStrictModeからNetworkOnMainThreadExceptionが投げられます。</strong>もちろん例外を投げられないように設定する事も可能ですが、やっぱり非同期のほうがユーザーに優しいです。<br/>
+じゃあAsyncTask使うか！ってなるのですが、ちょっとした通信も全部これで書くのは、いささかやりたくない。</p>
+
+<p>そんなあなたに<strong>Android Asynchronous Http Client</strong><br/>
+作者は<strong>loopj</strong>(James Smith)さん。Githubの写真がイケメンです。Apache2.0ライセンスで公開されています。<br/>
+あの<strong><em>Instagram</em></strong>もこのライブラリを使用しているそうです</p>
+
+<h1>特徴</h1>
+
+<ul>
+<li>Callbackベースで非同期通信の処理ができる</li>
+<li>Multipartでファイルのアップロードができる(Android標準のライブラリでできないのです、ぷんぷん)</li>
+<li>ライブラリは25KBと小さいので、オーバーヘッドが少ない</li>
+<li>gzipの設定とかその他もろもろHttpClientにいい感じの設定をやってくれといてくれる</li>
+<li>バイナリのダウンロードももちろん対応、画像ファイルのダウンロードも楽々です</li>
+<li>etc…</li>
+</ul>
+
+
+<h1>使い方</h1>
+
+<p>Projectフォルダのlibsフォルダに <a href="http://loopj.com/android-async-http/">http://loopj.com/android-async-http/</a> からDownloadできるandroid-async-http-1.4.1.jar（現在の最新）を入れます。<br/>
+一昔前はビルドパスを通すという作業をしていましたが、最新のADTではlibsフォルダに入れるだけで大丈夫なようです。(実は最近知りました、ADTのアップデートもちゃんと追わないとだめですねorz)<br/>
+またGithubからcloneしてProject Libraryとして使用してもOKです。<a href="https://github.com/loopj/android-async-http">https://github.com/loopj/android-async-http</a></p>
+
+<p>あとは通信したいところで以下のようなコードを書きます。</p>
+
+<div>
+  <div id="highlighter_177966">
+    <pre class="brush: java; gutter: true">AsyncHttpClient client = new AsyncHttpClient();
+client.get("http://www.google.com", new AsyncHttpResponseHandler() {
+    @Override
+    public void onSuccess(String response) {　　
+　　　　　// ここに通信が成功したときの処理をかく
+        System.out.println(response);
+    }
+});</pre>
+  </div>
+</div>
+
+
+<p>通信に失敗したときの処理(ステータスコードが200じゃなとき)は、AsyncResponseHandlerのonFailureをOverrideしたメソッドに書く事ができます。</p>
+
+<div>
+  <div id="highlighter_535988">
+    <pre class="brush: java; gutter: true">AsyncHttpClient client = new AsyncHttpClient();
+client.get("http://www.google.com", new AsyncHttpResponseHandler() {
+    @Override
+    public void onSuccess(String response) {　　
+　　　　　// ここに通信が成功したときの処理をかく
+        System.out.println(response);
+    }
+　　@Override
+    public void onFailure(Throwable error, String response) {　　
+　　　　　// ここに通信が失敗したときの処理をかく
+        System.out.println(response);
+    }　
+});</pre>
+  </div>
+</div>
+
+
+<p>テキストデータだけではなくバイナリデータもロードする事ができます。これで画像などのファイルもダウンロードできます。</p>
+
+<div>
+  <div id="highlighter_655726">
+    <pre class="brush: java; gutter: true">AsyncHttpClient client = new AsyncHttpClient();
+client.get("画像のアドレス", new BinaryHttpResponseHandler() {
+    @Override
+    public void onSuccess(byte[] binaryData) {　　
+　　　　　// ここに通信が成功したときの処理をかく
+    }
+　　@Override
+    public void onFailure(Throwable error, byte[] binaryData) {　　
+　　　　　// ここに通信が失敗したときの処理をかく
+    }　
+});</pre>
+  </div>
+</div>
+
+
+<p>GETやPOSTのメソッドでパラメーターをつけたいときもこんな感じ。ちなみにAsyncHttpClient#PostでPostメソッドで通信できるし、PUTやDELETEも準備されています。</p>
+
+<div>
+  <div id="highlighter_571037">
+    <pre class="brush: java; gutter: true">RequestParams params = new RequestParams();
+params.put("key", "value");
+params.put("more", "data");
+AsyncHttpClient client = new AsyncHttpClient();
+client.post("POSTしたいURL", params, new AsyncHttpResponseHandler() {
+    @Override
+    public void onSuccess(String response) {　　
+　　　　　// ここに通信が成功したときの処理をかく
+        System.out.println(response);
+    }
+});</pre>
+  </div>
+</div>
+
+
+<p>RequestParamsは以下のようにも追加する事ができます。</p>
+
+<div>
+  <div id="highlighter_992608">
+    <pre class="brush: java; gutter: true">// パラメータが1つしかないとき
+RequestParams params = new RequestParams("single", "value");
+ 
+// Mapで指定するとき
+HashMap&lt;String, String&gt; paramMap = new HashMap&lt;String, String&gt;();
+paramMap.put("key", "value");
+RequestParams params = new RequestParams(paramMap);</pre>
+  </div>
+</div>
+
+
+<p>基本的な使い方はこんな感じです。</p>
+
+<p>このライブラリの僕なりの使い方はまた今度書きます。</p>
+
+<p>(次回)<a href="http://blog.fly1ncu.com/2013/02/android-asynchronous-http-client-2/">Androidの非同期通信ライブラリをつかう その2- Android Asynchronous Http Client</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+    <a class="next" href="/posts/3">Newer &rarr;</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Shoichi Takagi -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a> | Themed with <a href="https://github.com/lucaslew/whitespace">Whitespace</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

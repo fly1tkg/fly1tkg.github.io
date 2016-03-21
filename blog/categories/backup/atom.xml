@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Backup | fly1tkg blog]]></title>
+  <link href="http://fly1tkg.github.io/blog/categories/backup/atom.xml" rel="self"/>
+  <link href="http://fly1tkg.github.io/"/>
+  <updated>2016-03-21T08:26:49+00:00</updated>
+  <id>http://fly1tkg.github.io/</id>
+  <author>
+    <name><![CDATA[Shoichi Takagi]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[書いたコードはどんどんBitbucketのプライベートリポジトリにpushする]]></title>
+    <link href="http://fly1tkg.github.io/2013/12/bitbucket-private/"/>
+    <updated>2013-12-30T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2013/12/bitbucket-private</id>
+    <content type="html"><![CDATA[<p>ちょっと試しで書いたコードとかは皆さんどうしていますか？</p>
+
+<p>僕はBitbucketのプライベートリポジトリにどんどん貯めるようにしています。</p>
+
+<p>実験的にコードを書いているとディスクの容量を食っていくので、ちょくちょく消すのですが、いざ昔書いたコードを使いたいって時に便利だからです。</p>
+
+<p>bitbucketのプライベートリポジトリなら無料だし、パブリックリポジトリとは違って、よくかんがえなくっても何かのキーとかパスワードとかを大公開してしまうことはないので気軽です。実験的なコードに限ってキーとかハードコートしてますし。</p>
+
+<p>気軽にプライベートリポジトリにpushするために、クライアントツールで作れる準備をしておくのも便利です。もちろん、いちいちbitbucketのサイトを開いて作ってもそんなに手間ではないですが。</p>
+
+<!--more-->
+
+
+<h1>コマンドラインからBitbucketのプライベートリポジトリを作成する</h1>
+
+<p>Bitbucketのプライベートリポジトリを作成するのに、Rest APIを利用することができます。.bachrcや.zshrcに以下のような記述をすると便利です。</p>
+
+<pre class="brush: bash; gutter: true">function prepo() { curl -X POST -u BitBucketの登録メールアドレス:パスワード -H "Content-Type: application/json" https://api.bitbucket.org/2.0/repositories/Bitbucketのユーザー名/$@ -d &#039;{"scm":"git", "is_private": true}&#039; };</pre>
+
+
+<p>これで</p>
+
+<pre class="brush: bash; gutter: true">prepo test-repo</pre>
+
+
+<p>のコマンドでtest-repoというリポジトリが作成されます</p>
+
+<h1>.gitignoreを生成する</h1>
+
+<p>gitignoreはgitignore.ioというサイトでRest APIが準備されており、一般的なものを取得することができます。</p>
+
+<p>まず以下を.bash_profileや.zshrcに記述します</p>
+
+<pre class="brush: bash; gutter: true">function gi() { curl http://gitignore.io/api/$@ ;}</pre>
+
+
+<p>例えばAndroidの.gitignoreのファイルを生成するには</p>
+
+<pre class="brush: bash; gutter: true">gi android &gt;&gt; .gitignore</pre>
+
+
+<p>でできます。</p>
+
+<h1>プライベートリポジトリへpushする</h1>
+
+<pre class="brush: bash; gutter: true">git remote add origin git@bitbucket.org:Bitbucketのユーザー名/リポジトリ名
+git push -u origin master</pre>
+
+
+<p>これでpushできます</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[PCが壊れたときの為に導入しておくべきサービスやソフトとか]]></title>
+    <link href="http://fly1tkg.github.io/2013/12/service-software/"/>
+    <updated>2013-12-21T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2013/12/service-software</id>
+    <content type="html"><![CDATA[<p>先日、Macbook Airが壊れました。修理に出す際、業務で使用しているPCなのでSSDの中身を全消去してから出しました。</p>
+
+<p>PCが壊れることは割とよくあるので、壊れたときに仕事が遅れないように常にバックアップをかけておくことが重要だと思います。その際に便利なソフトやサービスを紹介していきます。といっても有名どころなんですけどね、やっぱりここら辺はよくできていると思います。</p>
+
+<!--more-->
+
+
+<h1>Dropbox</h1>
+
+<p><a href="https://db.tt/Jk7Sa0AA" target="_blank">Dropbox</a></p>
+
+<p>Dropboxは非常にパワフルなバックアップ方法です。仕事で使うファイルなどをDropboxのフォルダに保存しておくだけで、もうデータをなくすことはなくなります。客にメールで大きなファイルを送るときに、ファイル転送サービスとかにいちいち登録しなくても、共有のURLを右クリックから作成することも可能です。無料でも十分ですが、年間9.99ドルで100GBにしておけば、写真や動画、音楽なんかのバックアップも完璧。僕はiPhotoのライブラリとiTunesのライブラリの保存先をDropboxにしています。僕は100GBのプランで使用しています。</p>
+
+<h1>Evernote</h1>
+
+<p><a href="https://www.evernote.com/referral/Registration.action?uid=57676224&sig=8d6fddda2cb4782d488ca70fe733f4da" target="_blank">Evernote</a></p>
+
+<p>Evernoteはメモや議事録をとるのに重宝します。自動でクラウドに保存してくれます。スマホアプリ版のドキュメントカメラはかなり強力で、書類を撮影すると、よけいな背景を取り除いて読みやすい画像でノートに保存してくれます。これはプライベートでも利用していてレシートを撮影していって月にいくら使ったかとかの簡易的な集計にも使っています。僕はプレミアムアカウントで利用しています。(月500円)</p>
+
+<h1>Google calendar</h1>
+
+<p><a href="https://www.google.com/calendar/" target="_blank">Google calendar</a></p>
+
+<p>グーグルカレンダーはスケジュール管理に非常に便利です。これを使いこなしてからは紙の手帳を持たなくなりました。僕は基本的にPCで入力してスマホでみるという使い方が多いです。PCもスマホもWeb以外にいろいろなアプリが対応しているので、好みで選択すればいいと思います。僕はPCはmac標準のカレンダー、iPhoneは標準のカレンダー、Androidはプリインストールされてたスケジュールアプリ使ってます。Google calendarは無料で利用できます。</p>
+
+<h1>Gmail</h1>
+
+<p><a href="http://mail.google.com" target="_blank">Gmail</a></p>
+
+<p>GmailのメリットとしてIMAPでアクセスできるので、端末間で未読、既読の共有ができる点です。暇なときとかにスマホでさくさくメールチェックできてとても楽です。</p>
+
+<p>Gmailは@gmail.comのメールだけじゃなくって、ほかのメールも設定できます。メールの受信はPOPで取得すると遅いので、メールサーバから直接@gmail.com宛に転送設定しておくのがベストです、送信はSMTPを設定すればOK、PCではWebで、iPhoneではMailBoxというアプリで、AndroidではGmailアプリで利用しています。利用は無料です。</p>
+
+<h1>github</h1>
+
+<p><a href="https://github.com/" target="_blank">github</a></p>
+
+<p>仕事のソースコードとかはここのプライベートリポジトリでバックアップしています。ほかにも、ドットファイルとかもここにバックアップしています。</p>
+
+<h1>bitbucket</h1>
+
+<p><a href="https://bitbucket.org/" target="_blank">bitbucket</a></p>
+
+<p>プライベートでつくるアプリとか、実験的なコードとかはここにバックアップしています。どんだけつかってもタダなので。たとえ1GBでも2GBでも、、、</p>
+
+<h1>まとめ</h1>
+
+<p>特にDropboxは強力なので、月に1000円くらい払っても、全然損にならないと思います。</p>
+]]></content>
+  </entry>
+  
+</feed>

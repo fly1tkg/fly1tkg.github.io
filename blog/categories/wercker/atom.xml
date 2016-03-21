@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Wercker | fly1tkg blog]]></title>
+  <link href="http://fly1tkg.github.io/blog/categories/wercker/atom.xml" rel="self"/>
+  <link href="http://fly1tkg.github.io/"/>
+  <updated>2016-03-21T08:26:49+00:00</updated>
+  <id>http://fly1tkg.github.io/</id>
+  <author>
+    <name><![CDATA[Shoichi Takagi]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[werckerのAndroidエミュレータでSDカードを使う]]></title>
+    <link href="http://fly1tkg.github.io/2014/07/android-emu-sdcard/"/>
+    <updated>2014-07-03T12:30:33+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/07/android-emu-sdcard</id>
+    <content type="html"><![CDATA[<p>werckerには公式のStepでAndroidのエミュレータをセットアップするすることができます</p>
+
+<p><a href="https://app.wercker.com/#applications/5241920d4f6b6b786f000586/tab/details">https://app.wercker.com/#applications/5241920d4f6b6b786f000586/tab/details</a></p>
+
+<p>しかし、このStepだとSDカードがマウントされていないため、SDカードを利用するユニットテストができません。</p>
+
+<!--more-->
+
+
+<p>SDカードをマウントしたエミュレータは以下の様なコードで作成できます。</p>
+
+<p><code>bash
+android create avd --force -n wercker -t android-19 --abi armeabi-v7a -c 256M
+</code></p>
+
+<p>そこでSDカードをマウントしたエミュレータを起動するStepを公式からForkして作りました。</p>
+
+<p><a href="https://app.wercker.com/#applications/539e93962e6afc0632000d9e/tab/details">https://app.wercker.com/#applications/539e93962e6afc0632000d9e/tab/details</a></p>
+
+<p>そのうちSDカードの容量を指定できるようにオプションを追加したりしようと思います。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[werckerでAndroidエミュレータが動かなくなったのでメモ]]></title>
+    <link href="http://fly1tkg.github.io/2014/07/wercker-android-emulator/"/>
+    <updated>2014-07-01T01:22:40+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/07/wercker-android-emulator</id>
+    <content type="html"><![CDATA[<p>昨日からこんなメッセージでwercker上のAndroidエミュレータが起動しなくなっていました。</p>
+
+<p><code>
+Error: Unable to find a 'userdata.img' file for ABI armeabi-v7a to copy into the AVD folder.
+</code></p>
+
+<!--more-->
+
+
+<p>古いplatform-tools向けにAndroidエミュレータのイメージファイルを配布しなくなっているからみたいなので、platform-toolsを先に更新するようにと、filterの名前を変更して、wercker.ymlを更新しました。</p>
+
+<p>```yaml
+build:
+  # The steps that will be executed on build
+  steps:</p>
+
+<pre><code>- script:
+    name: show base information
+    code: |
+      gradle -v
+      echo $ANDROID_HOME
+      echo $ANDROID_SDK_VERSION
+      echo $ANDROID_BUILD_TOOLS
+      echo $ANDROID_UPDATE_FILTER
+- android-sdk-update:
+    filter: tools,platform-tools
+- android-sdk-update:
+    filter: sys-img-armeabi-v7a-android-18
+</code></pre>
+
+<p>```</p>
+
+<p>またはboxであらかじめシステムイメージ入りのものを準備しておくのがいいと思いました。</p>
+
+<p>とりあえずメモ書きです。</p>
+]]></content>
+  </entry>
+  
+</feed>

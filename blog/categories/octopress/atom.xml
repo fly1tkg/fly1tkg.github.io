@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Octopress | fly1tkg blog]]></title>
+  <link href="http://fly1tkg.github.io/blog/categories/octopress/atom.xml" rel="self"/>
+  <link href="http://fly1tkg.github.io/"/>
+  <updated>2016-03-21T08:26:49+00:00</updated>
+  <id>http://fly1tkg.github.io/</id>
+  <author>
+    <name><![CDATA[Shoichi Takagi]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[WordpressからGitHub pages+Octopressに移行した]]></title>
+    <link href="http://fly1tkg.github.io/2014/06/wordpress-to-octopress/"/>
+    <updated>2014-06-29T11:34:45+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/06/wordpress-to-octopress</id>
+    <content type="html"><![CDATA[<p>今日WordpressからOctopressに移行しました。</p>
+
+<p>Octopressとは、JekyllというRuby製の静的サイト生成ツールを使って静的なブログを生成するフレームワークです。</p>
+
+<p><a href="http://octopress.org/docs/">http://octopress.org/docs/</a></p>
+
+<p>移行は以下の手順で行いました。</p>
+
+<ul>
+<li>Octopressの導入</li>
+<li>Wordpressの記事をJekyll向けにexport</li>
+<li>GitHub pagesにDeploy</li>
+<li>独自ドメインを設定する</li>
+<li>werckerを使ってDeployの自動化</li>
+</ul>
+
+
+<!--more-->
+
+
+<h2>Octopressの導入</h2>
+
+<p>Octopressの導入については以下のリンクで説明されています。</p>
+
+<p><a href="http://octopress.org/docs/setup/">http://octopress.org/docs/setup/</a></p>
+
+<p>OctopressはRuby1.9.3以上がインストールされている必要があります。rbenvやRVMでインストールをしておきましょう。</p>
+
+<p>以下のようにoctopressをcloneします</p>
+
+<p><code>bash
+git clone git://github.com/imathis/octopress.git octopress
+cd octopress
+</code></p>
+
+<p>次にbundlerのインストールと必要Gemのインストール</p>
+
+<p><code>bash
+gem install bundler
+bundle install
+</code></p>
+
+<p>最後にデフォルトのテーマのインストールです</p>
+
+<p><code>bash
+rake install
+</code></p>
+
+<p>_config.ymlにブログの情報を書きます。</p>
+
+<p><code>yaml
+url: http://b.fly1tkg.com
+title: fly1tkg blog
+subtitle: いろいろ
+author: Shoichi Takagi
+simple_search: https://www.google.com/search
+description:
+</code></p>
+
+<h2>Wordpressの記事をJekyll向けにexport</h2>
+
+<p>Wordpress to Jekyll exporterというWordpressのプラグインを利用しました。</p>
+
+<p><a href="https://github.com/benbalter/wordpress-to-jekyll-exporter">https://github.com/benbalter/wordpress-to-jekyll-exporter</a></p>
+
+<h3>使い方</h3>
+
+<ul>
+<li>このリポジトリの中身を/wp-content/plugins/フォルダに入れる</li>
+<li>php.iniに<code>extention=zip.so</code>のコメントアウトが外れていることを確認</li>
+<li>WordpressのダッシュボードからPluginを有効化</li>
+<li>ToolsのメニューからExport to Jekyllを選択する</li>
+</ul>
+
+
+<p>ダウンロードしたExportファイルを_config.yml以外を先程のOctopressのフォルダに入れればOKです</p>
+
+<p>基本的にはちゃんと変換されますが、Wordpressのプラグインを利用した記述は時々おかしくなっているので修正します。
+僕は、Syntax highlighterの部分がおかしくなっていました。</p>
+
+<p>またiframeを利用したyoutubeの貼り付けなどがおかしくなっていたので手動で修正しました。</p>
+
+<h2>GitHub pagesにDeploy</h2>
+
+<p>Github pagesの作り方については以下のリンクに説明があります。</p>
+
+<p><a href="https://pages.github.com/">https://pages.github.com/</a></p>
+
+<p>ユーザネーム.github.ioでリポジトリを作り、そこにhtmlをpushするとユーザネーム.github.ioのアドレスで配信されるようになります。</p>
+
+<p>Deploy先を以下のコマンドで設定できます。</p>
+
+<p><code>bash
+rake setup_github_pages
+</code></p>
+
+<p>途中でリポジトリのURLを聞かれるので、入力します。
+例) git@github.com:fly1tkg/fly1tkg.github.io.git</p>
+
+<p>そうすると以下のコマンドでdeployできるようになります。</p>
+
+<p><code>bash
+rake generate
+rake deploy
+</code></p>
+
+<h2>独自ドメインを設定する</h2>
+
+<p>独自ドメインの設定については以下のリンクに説明があります。</p>
+
+<p><a href="https://help.github.com/articles/setting-up-a-custom-domain-with-github-pages">https://help.github.com/articles/setting-up-a-custom-domain-with-github-pages</a></p>
+
+<p>CNAMEというファイルを作成して、中身は設定したい独自ドメインのみを記述します。
+このブログだったらb.fly1tkg.comをCNAMEに書きます。</p>
+
+<p>そしてそのCNAMEファイルをGitに追加してGitHubにpushします。</p>
+
+<p>次にDNSプロバイダで独自ドメインのDNS設定をします。</p>
+
+<p>CNAMEレコードでユーザネーム.github.ioに転送するように設定します。詳しくは各DNSプロバイダのドキュメントを参照すると良いと思います。</p>
+
+<p>僕はRoute53を利用しているので、さくっとCNAMEレコードを追加しました。</p>
+
+<h2>werckerを使ってDeployの自動化</h2>
+
+<p>Octopressのコードはgithub.ioのリポジトリとは別で管理するので、記事を書くたびに両方にデプロイするのは面倒なので、masterにコミットした内容を自動でgithub.ioにデプロイするようにします。</p>
+
+<p>デプロイの自動化はCircle CIやwerckerを利用するといいと思います。今回はwerckerを利用しました。</p>
+
+<p><a href="http://wercker.com">http://wercker.com</a></p>
+
+<p>GitHub pagesへのDeployについては以下のリンクが参考になります。</p>
+
+<p><a href="http://blog.wercker.com/2013/07/25/Using-wercker-to-publish-to-GitHub-pages.html">http://blog.wercker.com/2013/07/25/Using-wercker-to-publish-to-GitHub-pages.html</a></p>
+
+<p>werckerでアプリを作成して、wercker.ymlをリポジトリに追加します。</p>
+
+<p>僕は以下の様な設定をしました。</p>
+
+<p>```yaml
+box: wercker/<a href="&#109;&#97;&#105;&#108;&#x74;&#x6f;&#x3a;&#114;&#x76;&#109;&#64;&#x32;&#46;&#x30;&#x2e;&#x31;">&#114;&#x76;&#109;&#64;&#x32;&#x2e;&#x30;&#46;&#49;</a>
+build:
+  steps:</p>
+
+<pre><code>- wercker/bundle-install@1.1.1
+</code></pre>
+
+<p>deploy:
+  steps:</p>
+
+<pre><code>- script:
+    name: configure
+    code: |
+      git config --global user.email "fly1tkg@gmail.com"
+      git config --global user.name "wercker"
+      bundle ex rake setup_github_pages\["$GIT_REMOTE"\]
+- script:
+    name: deploy to github
+    code: |
+      bundle ex rake generate
+      bundle ex rake deploy
+</code></pre>
+
+<p>```</p>
+
+<h3>Deployの設定をする</h3>
+
+<p>werckerのアプリの設定ページでDeployの設定ができます。</p>
+
+<p>Add Deploy targetのボタン &ndash;> Custom deployを選択して、</p>
+
+<ul>
+<li>Deploy target name: github-pages</li>
+<li>Auto deploy: チェック, master</li>
+</ul>
+
+
+<p>と設定しました。</p>
+
+<p>Deploy pipelineの項目でAdd new variableというボタンを選択することでデプロイ時の環境変数を設定することができます。</p>
+
+<p>以下のように設定しました。</p>
+
+<ul>
+<li>name: GIT_REMOTE</li>
+<li>value: <code>https://GitHubのアプリケーションTOKEN@github.com/ユーザ名/リポジトリ名.git</code></li>
+</ul>
+
+
+<p>アプリケーションTOKENについてはGitHubのSettingのApplicationのセクションで新規作成できます。
+wercker用のものを発行しておきましょう。</p>
+
+<p>Deployはrake deployで行うのですが、デプロイを簡単にするためにgitのforceオプションでコミットするように変更します。</p>
+
+<p>Rakefileを開き、pushタスクの<code>git push</code>に<code>-f</code>をつけます</p>
+
+<p>```ruby
+desc &ldquo;deploy public directory to github pages&rdquo;
+multitask :push do
+  puts &ldquo;## Deploying branch to Github Pages &rdquo;
+  puts &ldquo;## Pulling any updates from Github Pages &rdquo;
+  cd &ldquo;#{deploy_dir}&rdquo; do</p>
+
+<pre><code>system "git pull"
+</code></pre>
+
+<p>  end
+  (Dir[&ldquo;#{deploy_dir}/*&rdquo;]).each { |f| rm_rf(f) }
+  Rake::Task[:copydot].invoke(public_dir, deploy_dir)
+  puts &ldquo;\n## Copying #{public_dir} to #{deploy_dir}&rdquo;
+  cp_r &ldquo;#{public_dir}/.&rdquo;, deploy_dir
+  cd &ldquo;#{deploy_dir}&rdquo; do</p>
+
+<pre><code>system "git add -A"
+message = "Site updated at #{Time.now.utc}"
+puts "\n## Committing: #{message}"
+system "git commit -m \"#{message}\""
+puts "\n## Pushing generated #{deploy_dir} website"
+system "git push -f origin #{deploy_branch}"
+puts "\n## Github Pages deploy complete"
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>これでDeployの設定が完了です。masterブランチに変更をpushすると自動でgithub-pagesにdeployされるようになります。</p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Android | fly1tkg blog]]></title>
+  <link href="http://fly1tkg.github.io/blog/categories/android/atom.xml" rel="self"/>
+  <link href="http://fly1tkg.github.io/"/>
+  <updated>2016-03-21T08:26:49+00:00</updated>
+  <id>http://fly1tkg.github.io/</id>
+  <author>
+    <name><![CDATA[Shoichi Takagi]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[RxJavaのテストコードを書く]]></title>
+    <link href="http://fly1tkg.github.io/2016/03/rxjava-test/"/>
+    <updated>2016-03-21T05:45:04+00:00</updated>
+    <id>http://fly1tkg.github.io/2016/03/rxjava-test</id>
+    <content type="html"><![CDATA[<h2>はじめに</h2>
+
+<p>最近のAndroidアプリ開発では<strong>Clean Architecture</strong>など、設計の議論がすすみ、テストコードのためのツール群も増えたことで、テストコードを書くコストが減ってきているように感じます。</p>
+
+<p>また、もう一つの流行としてRxJavaの採用事例が増えてきたように感じます。</p>
+
+<p>JavaのJUnitテストやAndroidのテストにおいて、RxJavaのテストコードをどのように書くべきか、調べたことを書いていきたいと思います。</p>
+
+<!-- More -->
+
+
+<h2>TestSubscriberについて</h2>
+
+<p>Subscriptionは非同期処理なので、ユニットテストするには同期処理が必要になります。（非同期処理のままにしておくと、Observableから値が返ってくる前にテストが終了してしまいます。）</p>
+
+<p>公式のテスト方法は<strong>TestSubscriber</strong>クラスを利用することです。これはRxJavaライブラリに含まれています。</p>
+
+<h2>正常系のテスト</h2>
+
+<p>以下がコードのサンプルです。</p>
+
+<p>```java
+Observable<String> observable = Observable.just(&ldquo;foo&rdquo;);</p>
+
+<p>// Testsubscriberを作成する
+TestSubscriber<String> testSubscriber = new TestSubscriber&lt;>();</p>
+
+<p>// テストしたObservableに先程のSubscriberをsubscribeさせます
+observable.subscribe(testSubscriber);</p>
+
+<p>// 処理が完了するのを待ちます
+testSubscriber.awaitTerminalEvent();</p>
+
+<p>// 検証します
+testSubscriber.assertNoErrors();
+testSubscriber.assertValue(&ldquo;foo&rdquo;);
+```</p>
+
+<p><strong>TestSubscriber#awaitTerminalEvent</strong>はObservableSubscriberの<strong>onCompleted</strong>または<strong>onError</strong>を呼ぶまでブロックしてくれます。longとTimeUnitを引数に指定することで、タイムアウトも指定することができます</p>
+
+<h2>異常系のテスト</h2>
+
+<p>例外の発生をテストする場合は以下のようにかけます。</p>
+
+<p>```java
+Observable<String> observable = Observable.error(new IllegalStateException());</p>
+
+<p>TestSubscriber<String> testSubscriber = new TestSubscriber&lt;>();
+observable.subscribe(testSubscriber);</p>
+
+<p>testSubscriber.awaitTerminalEvent();</p>
+
+<p>testSubscriber.assertError(IllegalStateException.class);
+```</p>
+
+<p><strong>TestSubscriber#assertError</strong>では引数に例外クラスまたはインスタンスを指定することで発生を検証できます。</p>
+
+<h2>ストリームとSubscriberの状態のテスト</h2>
+
+<p><strong>Testsubscriber#assertValue</strong>はストリームの一番最後の値しか検証できません。1つの値しか返さない場合はこれでも良いのですが、複数の値が流れてくる場合は工夫する必要があります。</p>
+
+<p>以下のコードでは説明を簡単にするためにTestSubscriberを直接操作しています。</p>
+
+<p>```java
+TestSubscriber<Integer> testSubscriber = new TestSubscriber&lt;>();</p>
+
+<p>// onNextに値が渡っていないことを検証できます
+testSubscriber.assertNoValues();</p>
+
+<p>testSubscriber.onNext(1);
+// onNextに渡ってきた値を検証する
+assert(1 == testSubscriber.getOnNextEvents().get(0));</p>
+
+<p>testSubscriber.onNext(2);
+testSubscriber.onNext(3);
+// getOnNextEventsはonNextで受け取った値を全て保持しています
+assert(1 == testSubscriber.getOnNextEvents().get(0));
+assert(2 == testSubscriber.getOnNextEvents().get(1));
+assert(3 == testSubscriber.getOnNextEvents().get(2));</p>
+
+<p>// onNextで受け取った値の配列を検証できます
+testSubscriber.assertReceivedOnNext(Arrays.asList(1, 2, 3));</p>
+
+<p>// 受け取った値の数を検証できます
+testSubscriber.assertValueCount(3);</p>
+
+<p>// subscriberの状態も検証できる
+testSubscriber.assertNotCompleted();
+testSubscriber.assertNoTerminalEvent();</p>
+
+<p>testSubscriber.onCompleted();
+testSubscriber.assertTerminalEvent();</p>
+
+<p>testSubscriber.unsubscribe();
+testSubscriber.assertUnsubscribed();
+```</p>
+
+<p><strong>TestSubscriber#getOnNextEvents</strong>はonNextで受け取った値を全て保持しています。これを利用すると特定の場所に特定の値が流れてくることを検証できます。</p>
+
+<p>また<strong>Testsubscriber#assertReceivedOnNext</strong>でonNextで受け取った値をリストで比較して検証できます。</p>
+
+<p><strong>Testsubscriber#assertValueCount</strong>はonNextで受け取った値の数を検証できます。</p>
+
+<p><strong>TestSubscriber#assertNotCompleted</strong>はonCompletedが呼ばれていないこと、</p>
+
+<p><strong>Testsubscriber#assertNoTerminalEvent</strong>はそれに加えてonErrorも呼ばれていないことを検証できます。</p>
+
+<p><strong>Testsubscriber#assertUnsubscribed</strong>はunsubscribeされていることを検証できます。</p>
+
+<h2>おわりに</h2>
+
+<p><strong>RxJava</strong>にはテスト用の<strong>TestSubscriber</strong>クラスが準備されています。</p>
+
+<p>RxJavaでは<strong>Observable#flatMap</strong>によって個々のObservableを簡単に連結できるので、小さい単位でObservableを作成するコードを作成し、それぞれの入出力のテストコードを書いておくことで、堅牢で柔軟なモジュールが作成できるのではと思いました。</p>
+
+<h2>Gist</h2>
+
+<p><a href="https://gist.github.com/fly1tkg/3c29dc34682b64076058">https://gist.github.com/fly1tkg/3c29dc34682b64076058</a></p>
+
+<h2>参考</h2>
+
+<p><a href="http://reactivex.io/RxJava/javadoc/rx/observers/TestSubscriber.html">http://reactivex.io/RxJava/javadoc/rx/observers/TestSubscriber.html</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[mockitoをAndroid4.3以上で動かす]]></title>
+    <link href="http://fly1tkg.github.io/2014/07/mockito-work-android-18/"/>
+    <updated>2014-07-30T01:37:59+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/07/mockito-work-android-18</id>
+    <content type="html"><![CDATA[<p>mockitoがAndroid4.3以上で動かない。以下のようなエラーメッセージが出ます。</p>
+
+<p><code>
+java.lang.IllegalArgumentException: dexcache == null (and no default could be found; consider setting the 'dexmaker.dexcache' system property)
+at com.google.dexmaker.DexMaker.generateAndLoad(DexMaker.java:359)
+</code></p>
+
+<p>dexmakerのAndroid4.3以上のバグのようなので(issueにあって対処法も書いてあるのにメンテされてないのかなあ）以下のようにすると利用できるようになります。</p>
+
+<!--more-->
+
+
+<h2>CustomInstrumentationTestRunnerを作成する</h2>
+
+<p>app/src/androidTest/java/your/package/Custominstrumentationtestrunner.javaを作成し、以下のように記述します。</p>
+
+<p>```java
+public class CustomInstrumentationTestRunner extends InstrumentationTestRunner {</p>
+
+<pre><code>@Override public void onCreate (final Bundle arguments) {
+    super.onCreate(arguments);
+
+    // temporary workaround for an incompatibility in current dexmaker (1.1) implementation and Android &gt;= 4.3
+    // cf. https://code.google.com/p/dexmaker/issues/detail?id=2 for details
+    System.setProperty("dexmaker.dexcache", getTargetContext().getCacheDir().toString());
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<h2>build.gradleに記述を追加する</h2>
+
+<p>```
+android {</p>
+
+<pre><code>defaultConfig {
+    testInstrumentationRunner "your.package.CustomInstrumentationTestRunner"
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>以上で動くようになります</p>
+
+<h2>追記: Android Studioの設定</h2>
+
+<p>Run > Edit Configrations… を選択し、Defaults > Android Testsの設定でSpecific instrumentation runnerに先ほどのCustomInstrumentationRunnerを入力します。</p>
+
+<p><img src="/images/2014/07/android_studio.png"></p>
+
+<h2>参考</h2>
+
+<p><a href="https://code.google.com/p/dexmaker/issues/detail?id=2">https://code.google.com/p/dexmaker/issues/detail?id=2</a></p>
+
+<p><a href="http://stackoverflow.com/questions/12267572/mockito-dexmaker-on-android">http://stackoverflow.com/questions/12267572/mockito-dexmaker-on-android</a></p>
+
+<p><a href="http://tools.android.com/tech-docs/new-build-system/user-guide#TOC-Testing">http://tools.android.com/tech-docs/new-build-system/user-guide#TOC-Testing</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[werckerのAndroidエミュレータでSDカードを使う]]></title>
+    <link href="http://fly1tkg.github.io/2014/07/android-emu-sdcard/"/>
+    <updated>2014-07-03T12:30:33+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/07/android-emu-sdcard</id>
+    <content type="html"><![CDATA[<p>werckerには公式のStepでAndroidのエミュレータをセットアップするすることができます</p>
+
+<p><a href="https://app.wercker.com/#applications/5241920d4f6b6b786f000586/tab/details">https://app.wercker.com/#applications/5241920d4f6b6b786f000586/tab/details</a></p>
+
+<p>しかし、このStepだとSDカードがマウントされていないため、SDカードを利用するユニットテストができません。</p>
+
+<!--more-->
+
+
+<p>SDカードをマウントしたエミュレータは以下の様なコードで作成できます。</p>
+
+<p><code>bash
+android create avd --force -n wercker -t android-19 --abi armeabi-v7a -c 256M
+</code></p>
+
+<p>そこでSDカードをマウントしたエミュレータを起動するStepを公式からForkして作りました。</p>
+
+<p><a href="https://app.wercker.com/#applications/539e93962e6afc0632000d9e/tab/details">https://app.wercker.com/#applications/539e93962e6afc0632000d9e/tab/details</a></p>
+
+<p>そのうちSDカードの容量を指定できるようにオプションを追加したりしようと思います。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[werckerでAndroidエミュレータが動かなくなったのでメモ]]></title>
+    <link href="http://fly1tkg.github.io/2014/07/wercker-android-emulator/"/>
+    <updated>2014-07-01T01:22:40+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/07/wercker-android-emulator</id>
+    <content type="html"><![CDATA[<p>昨日からこんなメッセージでwercker上のAndroidエミュレータが起動しなくなっていました。</p>
+
+<p><code>
+Error: Unable to find a 'userdata.img' file for ABI armeabi-v7a to copy into the AVD folder.
+</code></p>
+
+<!--more-->
+
+
+<p>古いplatform-tools向けにAndroidエミュレータのイメージファイルを配布しなくなっているからみたいなので、platform-toolsを先に更新するようにと、filterの名前を変更して、wercker.ymlを更新しました。</p>
+
+<p>```yaml
+build:
+  # The steps that will be executed on build
+  steps:</p>
+
+<pre><code>- script:
+    name: show base information
+    code: |
+      gradle -v
+      echo $ANDROID_HOME
+      echo $ANDROID_SDK_VERSION
+      echo $ANDROID_BUILD_TOOLS
+      echo $ANDROID_UPDATE_FILTER
+- android-sdk-update:
+    filter: tools,platform-tools
+- android-sdk-update:
+    filter: sys-img-armeabi-v7a-android-18
+</code></pre>
+
+<p>```</p>
+
+<p>またはboxであらかじめシステムイメージ入りのものを準備しておくのがいいと思いました。</p>
+
+<p>とりあえずメモ書きです。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[werckerのTestFairy Stepを作った]]></title>
+    <link href="http://fly1tkg.github.io/2014/06/wercker-testfairy-step/"/>
+    <updated>2014-06-13T00:00:00+00:00</updated>
+    <id>http://fly1tkg.github.io/2014/06/wercker-testfairy-step</id>
+    <content type="html"><![CDATA[<p>werckerのTestFairy stepを作りました。これを利用することでTestFairyにAndroidのapkをアップロードできます。</p>
+
+<p><a href="https://app.wercker.com/#applications/539a59212e6afc0632000196/tab/details">https://app.wercker.com/#applications/539a59212e6afc0632000196/tab/details</a></p>
+
+<p>ソースコード</p>
+
+<p><a href="https://github.com/fly1tkg/wercker-step-testfairy">https://github.com/fly1tkg/wercker-step-testfairy</a></p>
+
+<!--more-->
+
+
+<h2>使い方</h2>
+
+<h3>1. wercker.ymlのdeploy stepにfly1tkg/testfairyを追加します。</h3>
+
+<p>必須のオプションは2つです。</p>
+
+<ul>
+<li>api_key: TestFairyのAPI Key、後で設定する環境変数にしておくのがいいと思います。</li>
+<li>apk_file: apkのパスを入れてください</li>
+</ul>
+
+
+<p>API Keyは<span style="color: #636664;"> </span><a style="color: #368cb9;" href="https://app.testfairy.com/settings"><a href="https://app.testfairy.com/settings">https://app.testfairy.com/settings</a></a> から見ることができます。</p>
+
+<p>例</p>
+
+<pre class="brush: actionscript3; gutter: true">deploy:
+  steps:
+    - fly1tkg/testfairy:
+        api_key: $TESTFAIRY_API_KEY
+        apk_file: app/build/outputs/apk/app-debug-unaligned.apk</pre>
+
+
+<h3>2. deployの設定をする</h3>
+
+<p>Deploy TargetsのAdd Deploy Targetをクリックして、Custom Deployを選択します。</p>
+
+<p>ここに環境変数でTestFairyのAPI Keyを入れておきます。</p>
+
+<p>例</p>
+
+<ul>
+<li>Deploy Target Name: testfairy</li>
+<li>Environment Variable: TESTFAIRY_API_KEY: &lt;TestFairyのAPIキー></li>
+</ul>
+
+
+<p>これで完了です。Auto deployの設定をしている場合は自動で、していない場合はdeploy to のボタンからdeployすると、ビルド結果のapkがTestFairyにアップロードされます。</p>
+
+<h2>オプションについて</h2>
+
+<ul>
+<li>proguard_file: proguardのマッピングファイルのパス</li>
+<li>testers_groups: カンマ区切りで新しいビルドを通知するテスターグループを指定できます</li>
+<li>metrics: カンマ区切りで記録するメトリクスを指定できます</li>
+<li>max_duration: 最大のセッションの長さを指定できます。デフォルトは&#8221;10m&#8221;(10分)</li>
+<li>video: ビデオをレコードするかどうかを指定できます。 デフォルトは&#8221;on&#8221;</li>
+<li>video_quality: ビデオの画質設定です。&#8221;high&#8221;, &#8220;medium&#8221;, &#8220;low&#8221;から選べます。デフォルトは&#8221;high&#8221;</li>
+<li>video_rate: ビデオの1秒辺り何フレーム記録するか指定できます。デフォルトは&#8221;1.o&#8221;</li>
+<li>icon_watermark: アプリのアイコンにウォータマークをつけるかどうか。デフォルトは&#8221;off&#8221;</li>
+<li>comment: メールに載せるリリースノートを指定できます</li>
+</ul>
+
+
+<p>利用できるメトリクス</p>
+
+<ul>
+<li>cpu: userとkernelのCPU利用率</li>
+<li>memory: プロセスのprivateとsharedのメモリ分析</li>
+<li>network: プロセスのネットワーク利用率</li>
+<li>phone-signal: 電波の強さ</li>
+<li>logcat: プロセスのlogcatの出力(READ_LOGSのpermissionが追加される)</li>
+<li>gps: アプリが利用してる場合のみ、位置情報</li>
+<li>battery: バッテリーの状態(BATTERY_STASのpermissionが追加される)</li>
+<li>mic: アプリで利用している場合のみ、マイクの音声</li>
+</ul>
+
+
+<p>例</p>
+
+<p>```yaml
+deploy:
+  steps:</p>
+
+<pre><code>- fly1tkg/testfairy:
+    api_key: $TESTFAIRY_API_KEY
+    apk_file: app/build/outputs/apk/app-debug-unaligned.apk
+    testers_groups: tester
+    icon_watermark: on
+</code></pre>
+
+<p>```</p>
+]]></content>
+  </entry>
+  
+</feed>

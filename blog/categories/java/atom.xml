@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Java | fly1tkg blog]]></title>
+  <link href="http://fly1tkg.github.io/blog/categories/java/atom.xml" rel="self"/>
+  <link href="http://fly1tkg.github.io/"/>
+  <updated>2016-03-21T08:26:49+00:00</updated>
+  <id>http://fly1tkg.github.io/</id>
+  <author>
+    <name><![CDATA[Shoichi Takagi]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[RxJavaのテストコードを書く]]></title>
+    <link href="http://fly1tkg.github.io/2016/03/rxjava-test/"/>
+    <updated>2016-03-21T05:45:04+00:00</updated>
+    <id>http://fly1tkg.github.io/2016/03/rxjava-test</id>
+    <content type="html"><![CDATA[<h2>はじめに</h2>
+
+<p>最近のAndroidアプリ開発では<strong>Clean Architecture</strong>など、設計の議論がすすみ、テストコードのためのツール群も増えたことで、テストコードを書くコストが減ってきているように感じます。</p>
+
+<p>また、もう一つの流行としてRxJavaの採用事例が増えてきたように感じます。</p>
+
+<p>JavaのJUnitテストやAndroidのテストにおいて、RxJavaのテストコードをどのように書くべきか、調べたことを書いていきたいと思います。</p>
+
+<!-- More -->
+
+
+<h2>TestSubscriberについて</h2>
+
+<p>Subscriptionは非同期処理なので、ユニットテストするには同期処理が必要になります。（非同期処理のままにしておくと、Observableから値が返ってくる前にテストが終了してしまいます。）</p>
+
+<p>公式のテスト方法は<strong>TestSubscriber</strong>クラスを利用することです。これはRxJavaライブラリに含まれています。</p>
+
+<h2>正常系のテスト</h2>
+
+<p>以下がコードのサンプルです。</p>
+
+<p>```java
+Observable<String> observable = Observable.just(&ldquo;foo&rdquo;);</p>
+
+<p>// Testsubscriberを作成する
+TestSubscriber<String> testSubscriber = new TestSubscriber&lt;>();</p>
+
+<p>// テストしたObservableに先程のSubscriberをsubscribeさせます
+observable.subscribe(testSubscriber);</p>
+
+<p>// 処理が完了するのを待ちます
+testSubscriber.awaitTerminalEvent();</p>
+
+<p>// 検証します
+testSubscriber.assertNoErrors();
+testSubscriber.assertValue(&ldquo;foo&rdquo;);
+```</p>
+
+<p><strong>TestSubscriber#awaitTerminalEvent</strong>はObservableSubscriberの<strong>onCompleted</strong>または<strong>onError</strong>を呼ぶまでブロックしてくれます。longとTimeUnitを引数に指定することで、タイムアウトも指定することができます</p>
+
+<h2>異常系のテスト</h2>
+
+<p>例外の発生をテストする場合は以下のようにかけます。</p>
+
+<p>```java
+Observable<String> observable = Observable.error(new IllegalStateException());</p>
+
+<p>TestSubscriber<String> testSubscriber = new TestSubscriber&lt;>();
+observable.subscribe(testSubscriber);</p>
+
+<p>testSubscriber.awaitTerminalEvent();</p>
+
+<p>testSubscriber.assertError(IllegalStateException.class);
+```</p>
+
+<p><strong>TestSubscriber#assertError</strong>では引数に例外クラスまたはインスタンスを指定することで発生を検証できます。</p>
+
+<h2>ストリームとSubscriberの状態のテスト</h2>
+
+<p><strong>Testsubscriber#assertValue</strong>はストリームの一番最後の値しか検証できません。1つの値しか返さない場合はこれでも良いのですが、複数の値が流れてくる場合は工夫する必要があります。</p>
+
+<p>以下のコードでは説明を簡単にするためにTestSubscriberを直接操作しています。</p>
+
+<p>```java
+TestSubscriber<Integer> testSubscriber = new TestSubscriber&lt;>();</p>
+
+<p>// onNextに値が渡っていないことを検証できます
+testSubscriber.assertNoValues();</p>
+
+<p>testSubscriber.onNext(1);
+// onNextに渡ってきた値を検証する
+assert(1 == testSubscriber.getOnNextEvents().get(0));</p>
+
+<p>testSubscriber.onNext(2);
+testSubscriber.onNext(3);
+// getOnNextEventsはonNextで受け取った値を全て保持しています
+assert(1 == testSubscriber.getOnNextEvents().get(0));
+assert(2 == testSubscriber.getOnNextEvents().get(1));
+assert(3 == testSubscriber.getOnNextEvents().get(2));</p>
+
+<p>// onNextで受け取った値の配列を検証できます
+testSubscriber.assertReceivedOnNext(Arrays.asList(1, 2, 3));</p>
+
+<p>// 受け取った値の数を検証できます
+testSubscriber.assertValueCount(3);</p>
+
+<p>// subscriberの状態も検証できる
+testSubscriber.assertNotCompleted();
+testSubscriber.assertNoTerminalEvent();</p>
+
+<p>testSubscriber.onCompleted();
+testSubscriber.assertTerminalEvent();</p>
+
+<p>testSubscriber.unsubscribe();
+testSubscriber.assertUnsubscribed();
+```</p>
+
+<p><strong>TestSubscriber#getOnNextEvents</strong>はonNextで受け取った値を全て保持しています。これを利用すると特定の場所に特定の値が流れてくることを検証できます。</p>
+
+<p>また<strong>Testsubscriber#assertReceivedOnNext</strong>でonNextで受け取った値をリストで比較して検証できます。</p>
+
+<p><strong>Testsubscriber#assertValueCount</strong>はonNextで受け取った値の数を検証できます。</p>
+
+<p><strong>TestSubscriber#assertNotCompleted</strong>はonCompletedが呼ばれていないこと、</p>
+
+<p><strong>Testsubscriber#assertNoTerminalEvent</strong>はそれに加えてonErrorも呼ばれていないことを検証できます。</p>
+
+<p><strong>Testsubscriber#assertUnsubscribed</strong>はunsubscribeされていることを検証できます。</p>
+
+<h2>おわりに</h2>
+
+<p><strong>RxJava</strong>にはテスト用の<strong>TestSubscriber</strong>クラスが準備されています。</p>
+
+<p>RxJavaでは<strong>Observable#flatMap</strong>によって個々のObservableを簡単に連結できるので、小さい単位でObservableを作成するコードを作成し、それぞれの入出力のテストコードを書いておくことで、堅牢で柔軟なモジュールが作成できるのではと思いました。</p>
+
+<h2>Gist</h2>
+
+<p><a href="https://gist.github.com/fly1tkg/3c29dc34682b64076058">https://gist.github.com/fly1tkg/3c29dc34682b64076058</a></p>
+
+<h2>参考</h2>
+
+<p><a href="http://reactivex.io/RxJava/javadoc/rx/observers/TestSubscriber.html">http://reactivex.io/RxJava/javadoc/rx/observers/TestSubscriber.html</a></p>
+]]></content>
+  </entry>
+  
+</feed>
